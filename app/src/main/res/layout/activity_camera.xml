@@ -1,153 +1,225 @@
-    <!-- Baris Kontrol Atas untuk Mode Foto & Pro -->
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Preview Kamera Penuh -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Baris Kontrol Atas Mode Pro (3 Item Utama: Flash, RAW Indicator, Settings) -->
     <LinearLayout
-        android:id="@+id/topPhotoControls"
+        android:id="@+id/topProBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="end|center_vertical"
+        android:gravity="center_vertical"
         android:background="#99000000"
-        android:padding="8dp"
+        android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnFlashToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="⚡ OFF"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+        <!-- 1. Flash Kiri Atas -->
+        <ImageButton
+            android:id="@+id/btnProFlash"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_camera"
+            app:tint="@android:color/white" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnHdrToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="HDR: ON"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMacroToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="MACRO"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRatioToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="4:3"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRawToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
+        <!-- 2. Teks Indikator RAW di Tengah -->
+        <TextView
+            android:id="@+id/tvRawIndicator"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:text="RAW"
             android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
+        <!-- 3. Settings Kanan Atas -->
         <ImageButton
             android:id="@+id/btnOpenSettings"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_preferences"
             app:tint="@android:color/white" />
     </LinearLayout>
 
-    <!-- Baris Kontrol Atas Khusus Mode Video (5 Item: Flash, HDR, Stabilisasi, Resolusi, Settings) -->
+    <!-- Tombol Samping Kanan (Info & Switch Kamera) -->
     <LinearLayout
-        android:id="@+id/topVideoControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="60dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/topProBar">
+
+        <ImageButton
+            android:id="@+id/btnInfo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/ic_launcher_background"
+            android:backgroundTint="#33000000"
+            android:src="@android:drawable/ic_menu_info_details"
+            app:tint="@android:color/white" />
+
+        <ImageButton
+            android:id="@+id/btnSwitchCamera"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/ic_launcher_background"
+            android:backgroundTint="#33000000"
+            android:src="@android:drawable/ic_menu_rotate"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Panel Kontrol Bawah -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end|center_vertical"
+        android:orientation="vertical"
         android:background="#99000000"
-        android:padding="8dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent">
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- 1. Flash Video -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoFlash"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="⚡ OFF"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+        <!-- 5 Item Parameter Pro di atas Tombol Shutter (EV, ISO, S, WB, MF) -->
+        <LinearLayout
+            android:id="@+id/proParametersBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingVertical="12dp">
 
-        <!-- 2. HDR Video -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoHdr"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="HDR"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+            <Button
+                android:id="@+id/btnEvParam"
+                android:layout_width="60dp"
+                android:layout_height="44dp"
+                android:layout_marginHorizontal="4dp"
+                android:backgroundTint="#22FFFFFF"
+                android:text="EV\n0"
+                android:textSize="9sp"
+                android:textColor="@android:color/white" />
 
-        <!-- 3. Stabilisasi Video (Anti-shake) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoStabilization"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="STAB: ON"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+            <Button
+                android:id="@+id/btnIsoParam"
+                android:layout_width="60dp"
+                android:layout_height="44dp"
+                android:layout_marginHorizontal="4dp"
+                android:backgroundTint="#22FFFFFF"
+                android:text="ISO\nAuto"
+                android:textSize="9sp"
+                android:textColor="@android:color/white" />
 
-        <!-- 4. Resolusi & Frame Rate Video (1080p 30fps) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoResolution"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="1080p 30"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
+            <Button
+                android:id="@+id/btnShutterParam"
+                android:layout_width="60dp"
+                android:layout_height="44dp"
+                android:layout_marginHorizontal="4dp"
+                android:backgroundTint="#22FFFFFF"
+                android:text="S\nAuto"
+                android:textSize="9sp"
+                android:textColor="@android:color/white" />
 
-        <!-- 5. Settings Video -->
-        <ImageButton
-            android:id="@+id/btnVideoSettings"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_preferences"
-            app:tint="@android:color/white" />
+            <Button
+                android:id="@+id/btnWbParam"
+                android:layout_width="60dp"
+                android:layout_height="44dp"
+                android:layout_marginHorizontal="4dp"
+                android:backgroundTint="#22FFFFFF"
+                android:text="WB\nAuto"
+                android:textSize="9sp"
+                android:textColor="@android:color/white" />
+
+            <Button
+                android:id="@+id/btnMfParam"
+                android:layout_width="60dp"
+                android:layout_height="44dp"
+                android:layout_marginHorizontal="4dp"
+                android:backgroundTint="#22FFFFFF"
+                android:text="MF\nAuto"
+                android:textSize="9sp"
+                android:textColor="@android:color/white" />
+        </LinearLayout>
+
+        <!-- Baris Navigasi Mode (Pro, dll) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:id="@+id/modeCamera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:text="Foto"
+                android:textColor="#99FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/modeVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:text="Video"
+                android:textColor="#99FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/modePro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:text="Pro"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Baris Shutter & Gallery Preview -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="32dp">
+
+            <ImageButton
+                android:id="@+id/btnGalleryPreview"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/ic_launcher_background"
+                android:scaleType="centerCrop"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCapturePro"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:backgroundTint="#FFCC00"
+                android:text=""
+                app:cornerRadius="38dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
     </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
