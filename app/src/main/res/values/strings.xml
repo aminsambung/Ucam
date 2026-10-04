@@ -1,0 +1,18 @@
+<resources>
+    <!-- Nama Aplikasi -->
+    <string name="app_name">Ucam</string>
+
+    <!-- Label Tombol dan Menu -->
+    <string name="btn_capture">Jepret</string>
+    <string name="btn_settings">Pengaturan</string>
+    <string name="btn_raw_on">RAW: ON</string>
+    <string name="btn_raw_off">RAW</string>
+
+    <!-- Pesan Toast / Notifikasi -->
+    <string name="toast_photo_saved">Foto berhasil ditingkatkan &amp; disimpan!</string>
+    <string name="toast_capture_failed">Gagal mengambil foto: </string>
+    <string name="toast_camera_failed">Gagal memuat kamera: </string>
+    <string name="toast_permission_denied">Izin kamera ditolak.</string>
+    <string name="raw_enabled">Format RAW diaktifkan</string>
+    <string name="raw_disabled">Format RAW dimatikan</string>
+</resources>
