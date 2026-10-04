@@ -15,6 +15,10 @@ import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -48,6 +52,7 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 class CameraActivity : AppCompatActivity() {
 
@@ -56,6 +61,12 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var focusRing: View
     private lateinit var topBar: View
     private lateinit var bottomSection: View
+
+    // Overlay visual
+    private lateinit var gridOverlay: View
+    private lateinit var levelLine: View
+    private lateinit var focusPeakingRing: View
+    private lateinit var watermarkPreview: TextView
 
     private lateinit var btnFlash: ImageButton
     private lateinit var btnHdr: TextView
@@ -96,23 +107,40 @@ class CameraActivity : AppCompatActivity() {
     private val timerSeconds = intArrayOf(0, 3, 5, 10)
 
     // Panel settings state
-    private var currentRatio = "FULL"     // 1:1, 4:3, 16:9, FULL
-    private var currentTimer = 0          // 0=off, 1=3s, 2=5s, 3=10s
-    private var currentGrid = 0           // 0=off, 1=3x3, 2=4x4, 3=golden
+    private var currentRatio = "FULL"
+    private var currentTimer = 0
+    private var currentGrid = 0          // 0=off, 1=3x3, 2=4x4, 3=golden
     private var isLevelOn = false
     private var isStabilizerOn = true
     private var isMasterEffectOn = false
     private var isWatermarkOn = false
     private var isFocusPeakingOn = false
 
+    // Master efek profile
+    private var currentEffectProfile = "NONE"   // NONE, IPHONE, SONY, FUJI, LEICA, BW, VINTAGE
+
+    // Sensor untuk level indicator
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var gravity = FloatArray(3)
+    private var isLevelSensorRegistered = false
+
     private lateinit var cameraExecutor: ExecutorService
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO
-        )
+
+        private val REQUIRED_PERMISSIONS: Array<String> = buildList {
+            add(Manifest.permission.CAMERA)
+            add(Manifest.permission.RECORD_AUDIO)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.READ_MEDIA_IMAGES)
+            } else {
+                add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }.toTypedArray()
+
         private const val TAG = "CameraActivity"
     }
 
@@ -122,6 +150,8 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         bindViews()
         setupListeners()
@@ -143,6 +173,7 @@ class CameraActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
+        unregisterLevelSensor()
     }
 
     override fun onResume() {
@@ -150,37 +181,48 @@ class CameraActivity : AppCompatActivity() {
         if (::cameraExecutor.isInitialized) {
             cameraExecutor.execute { loadLastPhotoThumbnail() }
         }
+        if (isLevelOn) registerLevelSensor()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterLevelSensor()
     }
 
     // ================== BIND VIEWS ==================
     private fun bindViews() {
-        viewFinder        = findViewById(R.id.viewFinder)
-        focusRing         = findViewById(R.id.focusRing)
-        topBar            = findViewById(R.id.topBar)
-        bottomSection     = findViewById(R.id.bottomSection)
+        viewFinder         = findViewById(R.id.viewFinder)
+        focusRing          = findViewById(R.id.focusRing)
+        topBar             = findViewById(R.id.topBar)
+        bottomSection      = findViewById(R.id.bottomSection)
 
-        btnFlash          = findViewById(R.id.btnFlash)
-        btnHdr            = findViewById(R.id.btnHdr)
-        btnTimer          = findViewById(R.id.btnTimer)
-        btnSettings       = findViewById(R.id.btnSettings)
-        tvTimerText       = findViewById(R.id.tvTimerText)
+        gridOverlay        = findViewById(R.id.gridOverlay)
+        levelLine          = findViewById(R.id.levelLine)
+        focusPeakingRing   = findViewById(R.id.focusPeakingRing)
+        watermarkPreview   = findViewById(R.id.watermarkPreview)
 
-        zoom06            = findViewById(R.id.zoom06)
-        zoom1x            = findViewById(R.id.zoom1x)
-        zoom2x            = findViewById(R.id.zoom2x)
+        btnFlash           = findViewById(R.id.btnFlash)
+        btnHdr             = findViewById(R.id.btnHdr)
+        btnTimer           = findViewById(R.id.btnTimer)
+        btnSettings        = findViewById(R.id.btnSettings)
+        tvTimerText        = findViewById(R.id.tvTimerText)
 
-        modeNight         = findViewById(R.id.modeNight)
-        modePortrait      = findViewById(R.id.modePortrait)
-        modePhoto         = findViewById(R.id.modePhoto)
-        modeVideo         = findViewById(R.id.modeVideo)
-        modeVlog          = findViewById(R.id.modeVlog)
-        modePro           = findViewById(R.id.modePro)
+        zoom06             = findViewById(R.id.zoom06)
+        zoom1x             = findViewById(R.id.zoom1x)
+        zoom2x             = findViewById(R.id.zoom2x)
 
-        btnGalleryPreview = findViewById(R.id.btnGalleryPreview)
-        btnFilter         = findViewById(R.id.btnFilter)
-        btnCapture        = findViewById(R.id.btnCapture)
-        shutterInner      = findViewById(R.id.shutterInner)
-        btnSwitchCamera   = findViewById(R.id.btnSwitchCamera)
+        modeNight          = findViewById(R.id.modeNight)
+        modePortrait       = findViewById(R.id.modePortrait)
+        modePhoto          = findViewById(R.id.modePhoto)
+        modeVideo          = findViewById(R.id.modeVideo)
+        modeVlog           = findViewById(R.id.modeVlog)
+        modePro            = findViewById(R.id.modePro)
+
+        btnGalleryPreview  = findViewById(R.id.btnGalleryPreview)
+        btnFilter          = findViewById(R.id.btnFilter)
+        btnCapture         = findViewById(R.id.btnCapture)
+        shutterInner       = findViewById(R.id.shutterInner)
+        btnSwitchCamera    = findViewById(R.id.btnSwitchCamera)
     }
 
     // ================== LISTENERS ==================
@@ -203,10 +245,7 @@ class CameraActivity : AppCompatActivity() {
             updateTimerUI()
         }
 
-        // ⚙️ Buka panel overlay
-        btnSettings.setOnClickListener {
-            showSettingsOverlay()
-        }
+        btnSettings.setOnClickListener { showSettingsOverlay() }
 
         zoom06.setOnClickListener { setZoomByIndex(0) }
         zoom1x.setOnClickListener  { setZoomByIndex(1) }
@@ -224,15 +263,17 @@ class CameraActivity : AppCompatActivity() {
                 type = "image/*"
                 flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
+            try { startActivity(intent) } catch (_: Exception) {
                 Toast.makeText(this, "Tidak ada galeri", Toast.LENGTH_SHORT).show()
             }
         }
 
         btnFilter.setOnClickListener {
-            Toast.makeText(this, "Filter belum tersedia", Toast.LENGTH_SHORT).show()
+            // Cycle melalui efek
+            val effects = listOf("NONE", "IPHONE", "SONY", "FUJI", "LEICA", "BW", "VINTAGE")
+            val idx = effects.indexOf(currentEffectProfile)
+            currentEffectProfile = effects[(idx + 1) % effects.size]
+            Toast.makeText(this, "Efek: $currentEffectProfile", Toast.LENGTH_SHORT).show()
         }
 
         btnCapture.setOnClickListener {
@@ -268,10 +309,62 @@ class CameraActivity : AppCompatActivity() {
                     }, ContextCompat.getMainExecutor(this))
 
                 showFocusRing(event.x, event.y)
+
+                // Focus peaking di posisi tap
+                if (isFocusPeakingOn) {
+                    focusPeakingRing.x = event.x - focusPeakingRing.width / 2f
+                    focusPeakingRing.y = event.y - focusPeakingRing.height / 2f
+                    focusPeakingRing.visibility = View.VISIBLE
+                    focusPeakingRing.animate()
+                        .alpha(1f)
+                        .setDuration(150)
+                        .withEndAction {
+                            focusPeakingRing.animate().alpha(0f).setDuration(400)
+                                .withEndAction { focusPeakingRing.visibility = View.GONE }
+                                .start()
+                        }.start()
+                }
+
                 return@setOnTouchListener true
             }
             false
         }
+    }
+
+    // ================== SENSOR LEVEL ==================
+    private val levelListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            gravity = event.values.clone()
+            updateLevelLine()
+        }
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    private fun registerLevelSensor() {
+        if (!isLevelSensorRegistered && accelerometer != null) {
+            sensorManager.registerListener(
+                levelListener, accelerometer,
+                SensorManager.SENSOR_DELAY_UI
+            )
+            isLevelSensorRegistered = true
+        }
+    }
+
+    private fun unregisterLevelSensor() {
+        if (isLevelSensorRegistered) {
+            sensorManager.unregisterListener(levelListener)
+            isLevelSensorRegistered = false
+        }
+    }
+
+    private fun updateLevelLine() {
+        if (!isLevelOn) return
+        val roll = gravity[0]   // rotasi kiri/kanan
+        // Rotasi garis level
+        levelLine.rotation = -roll * 2f
+        // Warna: hijau kalau level (roll kecil), putih kalau tidak
+        val tint = if (abs(roll) < 1.5f) "#00FF00" else "#FFFFFF"
+        levelLine.setBackgroundColor(Color.parseColor(tint))
     }
 
     // ================== SETTINGS OVERLAY ==================
@@ -317,10 +410,10 @@ class CameraActivity : AppCompatActivity() {
 
         // Set state awal
         when (currentRatio) {
-            "1:1" -> styleGroup(ratio11, true, ratioGroup)
-            "4:3" -> styleGroup(ratio43, true, ratioGroup)
+            "1:1"  -> styleGroup(ratio11, true, ratioGroup)
+            "4:3"  -> styleGroup(ratio43, true, ratioGroup)
             "16:9" -> styleGroup(ratio169, true, ratioGroup)
-            else -> styleGroup(ratioFull, true, ratioGroup)
+            else   -> styleGroup(ratioFull, true, ratioGroup)
         }
         when (currentTimer) {
             0 -> styleGroup(timerOff, true, timerGroup)
@@ -338,27 +431,42 @@ class CameraActivity : AppCompatActivity() {
         // Listeners
         btnClose.setOnClickListener { dialog.dismiss() }
 
-        ratio11.setOnClickListener   { currentRatio = "1:1";  styleGroup(ratio11, true, ratioGroup);  applyAspectRatio() }
-        ratio43.setOnClickListener   { currentRatio = "4:3";  styleGroup(ratio43, true, ratioGroup);  applyAspectRatio() }
-        ratio169.setOnClickListener  { currentRatio = "16:9"; styleGroup(ratio169, true, ratioGroup); applyAspectRatio() }
-        ratioFull.setOnClickListener { currentRatio = "FULL"; styleGroup(ratioFull, true, ratioGroup); applyAspectRatio() }
+        ratio11.setOnClickListener {
+            currentRatio = "1:1"; styleGroup(ratio11, true, ratioGroup); applyAspectRatio()
+        }
+        ratio43.setOnClickListener {
+            currentRatio = "4:3"; styleGroup(ratio43, true, ratioGroup); applyAspectRatio()
+        }
+        ratio169.setOnClickListener {
+            currentRatio = "16:9"; styleGroup(ratio169, true, ratioGroup); applyAspectRatio()
+        }
+        ratioFull.setOnClickListener {
+            currentRatio = "FULL"; styleGroup(ratioFull, true, ratioGroup); applyAspectRatio()
+        }
 
-        timerOff.setOnClickListener { currentTimer = 0; timerState = 0; styleGroup(timerOff, true, timerGroup); updateTimerUI() }
-        timer3.setOnClickListener   { currentTimer = 1; timerState = 1; styleGroup(timer3, true, timerGroup);   updateTimerUI() }
-        timer5.setOnClickListener   { currentTimer = 2; timerState = 2; styleGroup(timer5, true, timerGroup);   updateTimerUI() }
-        timer10.setOnClickListener  { currentTimer = 3; timerState = 3; styleGroup(timer10, true, timerGroup);  updateTimerUI() }
+        timerOff.setOnClickListener {
+            currentTimer = 0; timerState = 0; styleGroup(timerOff, true, timerGroup); updateTimerUI()
+        }
+        timer3.setOnClickListener {
+            currentTimer = 1; timerState = 1; styleGroup(timer3, true, timerGroup); updateTimerUI()
+        }
+        timer5.setOnClickListener {
+            currentTimer = 2; timerState = 2; styleGroup(timer5, true, timerGroup); updateTimerUI()
+        }
+        timer10.setOnClickListener {
+            currentTimer = 3; timerState = 3; styleGroup(timer10, true, timerGroup); updateTimerUI()
+        }
 
         btnGrid.setOnClickListener {
             currentGrid = (currentGrid + 1) % 4
             btnGrid.background.setTint(if (currentGrid > 0) Color.parseColor("#FFC107") else Color.WHITE)
-            val names = listOf("Off", "3x3", "4x4", "Golden")
-            Toast.makeText(this, "Grid: ${names[currentGrid]}", Toast.LENGTH_SHORT).show()
+            applyGrid()
         }
 
         btnLevel.setOnClickListener {
             isLevelOn = !isLevelOn
             btnLevel.background.setTint(if (isLevelOn) Color.parseColor("#FFC107") else Color.WHITE)
-            Toast.makeText(this, if (isLevelOn) "Level ON" else "Level OFF", Toast.LENGTH_SHORT).show()
+            applyLevel()
         }
 
         btnStabilizer.setOnClickListener {
@@ -376,7 +484,7 @@ class CameraActivity : AppCompatActivity() {
         btnWatermark.setOnClickListener {
             isWatermarkOn = !isWatermarkOn
             btnWatermark.background.setTint(if (isWatermarkOn) Color.parseColor("#FFC107") else Color.WHITE)
-            Toast.makeText(this, if (isWatermarkOn) "Tanda Air ON" else "Tanda Air OFF", Toast.LENGTH_SHORT).show()
+            applyWatermark()
         }
 
         btnFocus.setOnClickListener {
@@ -388,9 +496,51 @@ class CameraActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    // ================== APPLY VISUAL ==================
     private fun applyAspectRatio() {
-        // Rebuild camera dengan aspect ratio baru
         startCamera()
+    }
+
+    private fun applyGrid() {
+        when (currentGrid) {
+            0 -> gridOverlay.visibility = View.GONE
+            1 -> {
+                gridOverlay.background = ContextCompat.getDrawable(this, R.drawable.grid_overlay)
+                gridOverlay.visibility = View.VISIBLE
+            }
+            2 -> {
+                gridOverlay.background = ContextCompat.getDrawable(this, R.drawable.grid_overlay_4x4)
+                gridOverlay.visibility = View.VISIBLE
+            }
+            3 -> {
+                gridOverlay.background = ContextCompat.getDrawable(this, R.drawable.grid_overlay_golden)
+                gridOverlay.visibility = View.VISIBLE
+            }
+        }
+        val names = listOf("Off", "3x3", "4x4", "Golden")
+        Toast.makeText(this, "Grid: ${names[currentGrid]}", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun applyLevel() {
+        if (isLevelOn) {
+            levelLine.visibility = View.VISIBLE
+            registerLevelSensor()
+            Toast.makeText(this, "Level ON", Toast.LENGTH_SHORT).show()
+        } else {
+            levelLine.visibility = View.GONE
+            unregisterLevelSensor()
+            Toast.makeText(this, "Level OFF", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun applyWatermark() {
+        if (isWatermarkOn) {
+            watermarkPreview.visibility = View.VISIBLE
+            Toast.makeText(this, "Tanda Air ON", Toast.LENGTH_SHORT).show()
+        } else {
+            watermarkPreview.visibility = View.GONE
+            Toast.makeText(this, "Tanda Air OFF", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // ================== UI UPDATES ==================
@@ -458,9 +608,7 @@ class CameraActivity : AppCompatActivity() {
         focusRing.scaleX = 1.3f
         focusRing.scaleY = 1.3f
         focusRing.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .alpha(0f)
+            .scaleX(1f).scaleY(1f).alpha(0f)
             .setDuration(1200)
             .withEndAction { focusRing.visibility = View.INVISIBLE }
             .start()
@@ -481,13 +629,13 @@ class CameraActivity : AppCompatActivity() {
         }
 
         val activeView = when (newMode) {
-            "NIGHT" -> modeNight
+            "NIGHT"    -> modeNight
             "PORTRAIT" -> modePortrait
-            "PHOTO" -> modePhoto
-            "VIDEO" -> modeVideo
-            "VLOG" -> modeVlog
-            "PRO" -> modePro
-            else -> modePhoto
+            "PHOTO"    -> modePhoto
+            "VIDEO"    -> modeVideo
+            "VLOG"     -> modeVlog
+            "PRO"      -> modePro
+            else       -> modePhoto
         }
         activeView.setTextColor(active)
         activeView.setTypeface(bold)
@@ -510,7 +658,7 @@ class CameraActivity : AppCompatActivity() {
 
     // ================== CAMERA ==================
     private fun startCamera() {
-        Log.d(TAG, "startCamera() dipanggil — ratio=$currentRatio")
+        Log.d(TAG, "startCamera() — ratio=$currentRatio")
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
@@ -523,7 +671,7 @@ class CameraActivity : AppCompatActivity() {
 
                 val aspectRatio = when (currentRatio) {
                     "16:9" -> AspectRatio.RATIO_16_9
-                    else -> AspectRatio.RATIO_4_3
+                    else   -> AspectRatio.RATIO_4_3
                 }
 
                 imageCapture = ImageCapture.Builder()
@@ -542,7 +690,6 @@ class CameraActivity : AppCompatActivity() {
                 applyFlashToCapture()
 
                 Log.d(TAG, "Camera bind SUCCESS")
-
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind FAILED", e)
                 Toast.makeText(this, "Camera error: ${e.message}", Toast.LENGTH_LONG).show()
@@ -601,9 +748,20 @@ class CameraActivity : AppCompatActivity() {
                         val bitmap = image.toBitmap()
                         image.close()
 
-                        val finalBitmap = if (isHdrEnabled &&
-                            (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")
-                        ) applyEnhancement(bitmap) else bitmap
+                        // Apply efek master (kalau aktif)
+                        var finalBitmap = if (isMasterEffectOn) {
+                            applyEffectProfile(bitmap, currentEffectProfile)
+                        } else bitmap
+
+                        // Apply HDR enhancement
+                        if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
+                            finalBitmap = applyEnhancement(finalBitmap)
+                        }
+
+                        // Apply watermark
+                        if (isWatermarkOn) {
+                            finalBitmap = applyWatermark(finalBitmap)
+                        }
 
                         saveBitmapToGallery(finalBitmap)
                     } catch (e: Exception) {
@@ -614,121 +772,6 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private fun applyEnhancement(src: Bitmap): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        val paint = Paint()
-
-        val colorMatrix = ColorMatrix().apply { setSaturation(1.2f) }
-        val scaleMatrix = ColorMatrix(
-            floatArrayOf(
-                1.1f, 0f, 0f, 0f, 15f,
-                0f, 1.1f, 0f, 0f, 15f,
-                0f, 0f, 1.1f, 0f, 15f,
-                0f, 0f, 0f, 1f, 0f
-            )
-        )
-        colorMatrix.postConcat(scaleMatrix)
-        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
-        canvas.drawBitmap(src, 0f, 0f, paint)
-        return dest
-    }
-
-    // ================== SAVE ==================
-    private fun saveBitmapToGallery(bitmap: Bitmap) {
-        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
-            .format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UcamApp")
-            }
-        }
-
-        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-        uri?.let {
-            val stream: OutputStream? = contentResolver.openOutputStream(it)
-            stream?.use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
-            Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
-            cameraExecutor.execute { loadLastPhotoThumbnail() }
-        }
-    }
-
-    // ================== THUMBNAIL ==================
-    private fun loadLastPhotoThumbnail() {
-        try {
-            val projection = arrayOf(
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.DATE_ADDED
-            )
-            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
-            val selectionArgs = arrayOf("%Pictures/UcamApp%")
-            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-
-            val cursor = contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection, selection, selectionArgs, sortOrder
-            )
-
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                    )
-
-                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
-                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                            decoder.isMutableRequired = false
-                            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                        }
-                    } else {
-                        @Suppress("DEPRECATION")
-                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                    }
-
-                    runOnUiThread {
-                        try {
-                            btnGalleryPreview.setImageDrawable(BitmapDrawable(resources, bitmap))
-                            btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
-                            btnGalleryPreview.background = null
-                            btnGalleryPreview.clipToOutline = true
-                            btnGalleryPreview.outlineProvider = object : ViewOutlineProvider() {
-                                override fun getOutline(view: View, outline: Outline) {
-                                    outline.setOval(0, 0, view.width, view.height)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Thumbnail error", e)
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "loadLastPhotoThumbnail error", e)
-        }
-    }
-
-    // ================== PERMISSIONS ==================
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                viewFinder.postDelayed({ startCamera() }, 300)
-            } else {
-                Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show()
-                finish()
-            }
-        }
-    }
-}
+    // ================== EFEK / COLOR GRADING ==================
+    private fun applyEffectProfile(src: Bitmap, profile: String): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_888
