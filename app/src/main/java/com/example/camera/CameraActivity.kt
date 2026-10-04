@@ -774,4 +774,213 @@ class CameraActivity : AppCompatActivity() {
 
     // ================== EFEK / COLOR GRADING ==================
     private fun applyEffectProfile(src: Bitmap, profile: String): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_888
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        val paint = Paint()
+
+        val matrix = when (profile) {
+            "IPHONE" -> ColorMatrix(floatArrayOf(
+                1.10f, 0.00f, 0.00f, 0f, 8f,
+                0.00f, 1.05f, 0.00f, 0f, 4f,
+                0.00f, 0.00f, 0.95f, 0f, 0f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "SONY" -> ColorMatrix(floatArrayOf(
+                1.15f, 0.05f, -0.05f, 0f, 5f,
+                0.00f, 1.08f, 0.00f, 0f, 0f,
+                0.00f, 0.02f, 1.10f, 0f, -5f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "FUJI" -> ColorMatrix(floatArrayOf(
+                0.95f, 0.05f, 0.05f, 0f, 10f,
+                0.05f, 0.95f, 0.05f, 0f, 8f,
+                0.05f, 0.05f, 0.90f, 0f, 5f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "LEICA" -> ColorMatrix(floatArrayOf(
+                1.05f, 0.02f, -0.02f, 0f, 3f,
+                0.00f, 1.02f, 0.00f, 0f, 3f,
+                0.00f, 0.00f, 1.05f, 0f, 3f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "BW" -> ColorMatrix().apply { setSaturation(0f) }
+            "VINTAGE" -> ColorMatrix(floatArrayOf(
+                1.10f, 0.10f, 0.10f, 0f, -10f,
+                0.05f, 1.05f, 0.05f, 0f, -5f,
+                0.00f, 0.00f, 0.90f, 0f, 10f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            else -> ColorMatrix()
+        }
+
+        // Boost saturation untuk efek tertentu
+        if (profile == "IPHONE" || profile == "SONY") {
+            val sat = ColorMatrix().apply { setSaturation(1.15f) }
+            matrix.postConcat(sat)
+        }
+
+        // Contrast boost
+        if (profile != "NONE") {
+            val contrast = when (profile) {
+                "SONY" -> 1.18f
+                "IPHONE" -> 1.08f
+                "FUJI" -> 1.10f
+                else -> 1.05f
+            }
+            val t = (-0.5f * contrast + 0.5f) * 255f
+            val cm = ColorMatrix(floatArrayOf(
+                contrast, 0f, 0f, 0f, t,
+                0f, contrast, 0f, 0f, t,
+                0f, 0f, contrast, 0f, t,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(cm)
+        }
+
+        paint.colorFilter = ColorMatrixColorFilter(matrix)
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return dest
+    }
+
+    private fun applyEnhancement(src: Bitmap): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        val paint = Paint()
+
+        val colorMatrix = ColorMatrix().apply { setSaturation(1.2f) }
+        val scaleMatrix = ColorMatrix(
+            floatArrayOf(
+                1.1f, 0f, 0f, 0f, 15f,
+                0f, 1.1f, 0f, 0f, 15f,
+                0f, 0f, 1.1f, 0f, 15f,
+                0f, 0f, 0f, 1f, 0f
+            )
+        )
+        colorMatrix.postConcat(scaleMatrix)
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return dest
+    }
+
+    // ================== WATERMARK ==================
+    private fun applyWatermark(src: Bitmap): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        canvas.drawBitmap(src, 0f, 0f, null)
+
+        val paint = Paint().apply {
+            color = Color.WHITE
+            alpha = 180
+            textSize = src.width / 25f
+            isAntiAlias = true
+            typeface = Typeface.DEFAULT_BOLD
+            setShadowLayer(4f, 2f, 2f, Color.BLACK)
+        }
+
+        val text = "Ucam"
+        val textWidth = paint.measureText(text)
+        val x = src.width - textWidth - (src.width * 0.03f)
+        val y = src.height - (src.height * 0.04f)
+
+        canvas.drawText(text, x, y, paint)
+        return dest
+    }
+
+    // ================== SAVE ==================
+    private fun saveBitmapToGallery(bitmap: Bitmap) {
+        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
+            .format(System.currentTimeMillis())
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UcamApp")
+            }
+        }
+
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        uri?.let {
+            val stream: OutputStream? = contentResolver.openOutputStream(it)
+            stream?.use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+            Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
+            cameraExecutor.execute { loadLastPhotoThumbnail() }
+        }
+    }
+
+    // ================== THUMBNAIL ==================
+    private fun loadLastPhotoThumbnail() {
+        try {
+            val projection = arrayOf(
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.DATE_ADDED
+            )
+            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+            val selectionArgs = arrayOf("%Pictures/UcamApp%")
+            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+            val cursor = contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection, selection, selectionArgs, sortOrder
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                    val uri = ContentUris.withAppendedId(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                    )
+
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                            decoder.isMutableRequired = false
+                            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                    }
+
+                    runOnUiThread {
+                        try {
+                            btnGalleryPreview.setImageDrawable(BitmapDrawable(resources, bitmap))
+                            btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
+                            btnGalleryPreview.background = null
+                            btnGalleryPreview.clipToOutline = true
+                            btnGalleryPreview.outlineProvider = object : ViewOutlineProvider() {
+                                override fun getOutline(view: View, outline: Outline) {
+                                    outline.setOval(0, 0, view.width, view.height)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Thumbnail error", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "loadLastPhotoThumbnail error", e)
+        }
+    }
+
+    // ================== PERMISSIONS ==================
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                viewFinder.postDelayed({ startCamera() }, 300)
+            } else {
+                Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+    }
+}
