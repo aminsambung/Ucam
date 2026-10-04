@@ -1,6 +1,7 @@
 package com.example.camera
 
 import android.Manifest
+import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,21 +10,27 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.MediaStore
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
@@ -37,6 +44,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class CameraActivity : AppCompatActivity() {
 
@@ -65,7 +73,7 @@ class CameraActivity : AppCompatActivity() {
 
     private lateinit var btnGalleryPreview: ImageButton
     private lateinit var btnFilter: ImageButton
-    private lateinit var btnCapture: View          // FrameLayout
+    private lateinit var btnCapture: View
     private lateinit var shutterInner: View
     private lateinit var btnSwitchCamera: ImageButton
 
@@ -75,17 +83,17 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var currentMode = "PHOTO"
 
-    private var flashState = 0            // 0=OFF, 1=ON, 2=AUTO
+    private var flashState = 0
     private var isHdrEnabled = true
     private var isRawActive = false
 
-    private var zoomIndex = 1             // 0=0.6x, 1=1x, 2=2x
+    private var zoomIndex = 1
     private val zoomValues = floatArrayOf(0.6f, 1.0f, 2.0f)
 
-    private var timerState = 0            // 0=off, 1=3s, 2=10s
+    private var timerState = 0
     private val timerSeconds = intArrayOf(0, 3, 10)
 
-    // Parameter Pro
+    // Parameter Pro (disimpan untuk future use)
     private var evIndex = 1
     private val evValues = arrayOf("EV\n-1", "EV\n0", "EV\n+1")
     private var isoIndex = 0
@@ -97,7 +105,6 @@ class CameraActivity : AppCompatActivity() {
     private var mfIndex = 0
     private val mfValues = arrayOf("MF\nAuto", "MF\nMacro", "MF\nInfinity")
 
-    // Camera executor
     private lateinit var cameraExecutor: ExecutorService
 
     companion object {
@@ -128,6 +135,10 @@ class CameraActivity : AppCompatActivity() {
         switchMode("PHOTO")
         updateFlashUI()
         updateTimerUI()
+        updateZoomUI()
+
+        // Muat thumbnail foto terakhir
+        cameraExecutor.execute { loadLastPhotoThumbnail() }
     }
 
     override fun onDestroy() {
@@ -135,29 +146,37 @@ class CameraActivity : AppCompatActivity() {
         cameraExecutor.shutdown()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Refresh thumbnail saat kembali dari galeri
+        if (::cameraExecutor.isInitialized) {
+            cameraExecutor.execute { loadLastPhotoThumbnail() }
+        }
+    }
+
     // ================== BIND VIEWS ==================
     private fun bindViews() {
-        viewFinder       = findViewById(R.id.viewFinder)
-        focusRing        = findViewById(R.id.focusRing)
-        topBar           = findViewById(R.id.topBar)
-        bottomSection    = findViewById(R.id.bottomSection)
+        viewFinder        = findViewById(R.id.viewFinder)
+        focusRing         = findViewById(R.id.focusRing)
+        topBar            = findViewById(R.id.topBar)
+        bottomSection     = findViewById(R.id.bottomSection)
 
-        btnFlash         = findViewById(R.id.btnFlash)
-        btnHdr           = findViewById(R.id.btnHdr)
-        btnTimer         = findViewById(R.id.btnTimer)
-        btnSettings      = findViewById(R.id.btnSettings)
-        tvTimerText      = findViewById(R.id.tvTimerText)
+        btnFlash          = findViewById(R.id.btnFlash)
+        btnHdr            = findViewById(R.id.btnHdr)
+        btnTimer          = findViewById(R.id.btnTimer)
+        btnSettings       = findViewById(R.id.btnSettings)
+        tvTimerText       = findViewById(R.id.tvTimerText)
 
-        zoom06           = findViewById(R.id.zoom06)
-        zoom1x           = findViewById(R.id.zoom1x)
-        zoom2x           = findViewById(R.id.zoom2x)
+        zoom06            = findViewById(R.id.zoom06)
+        zoom1x            = findViewById(R.id.zoom1x)
+        zoom2x            = findViewById(R.id.zoom2x)
 
-        modeNight        = findViewById(R.id.modeNight)
-        modePortrait     = findViewById(R.id.modePortrait)
-        modePhoto        = findViewById(R.id.modePhoto)
-        modeVideo        = findViewById(R.id.modeVideo)
-        modeVlog         = findViewById(R.id.modeVlog)
-        modePro          = findViewById(R.id.modePro)
+        modeNight         = findViewById(R.id.modeNight)
+        modePortrait      = findViewById(R.id.modePortrait)
+        modePhoto         = findViewById(R.id.modePhoto)
+        modeVideo         = findViewById(R.id.modeVideo)
+        modeVlog          = findViewById(R.id.modeVlog)
+        modePro           = findViewById(R.id.modePro)
 
         btnGalleryPreview = findViewById(R.id.btnGalleryPreview)
         btnFilter         = findViewById(R.id.btnFilter)
@@ -168,7 +187,7 @@ class CameraActivity : AppCompatActivity() {
 
     // ================== LISTENERS ==================
     private fun setupListeners() {
-        // Flash: cycle OFF → ON → AUTO
+        // Flash: OFF → ON → AUTO
         btnFlash.setOnClickListener {
             flashState = (flashState + 1) % 3
             updateFlashUI()
@@ -186,7 +205,7 @@ class CameraActivity : AppCompatActivity() {
             ).show()
         }
 
-        // Timer: cycle 0s → 3s → 10s
+        // Timer
         btnTimer.setOnClickListener {
             timerState = (timerState + 1) % 3
             updateTimerUI()
@@ -197,12 +216,12 @@ class CameraActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // Zoom buttons
+        // Zoom
         zoom06.setOnClickListener { setZoomByIndex(0) }
         zoom1x.setOnClickListener  { setZoomByIndex(1) }
         zoom2x.setOnClickListener  { setZoomByIndex(2) }
 
-        // Mode buttons
+        // Mode
         modeNight.setOnClickListener    { switchMode("NIGHT") }
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
         modePhoto.setOnClickListener    { switchMode("PHOTO") }
@@ -210,7 +229,7 @@ class CameraActivity : AppCompatActivity() {
         modeVlog.setOnClickListener     { switchMode("VLOG") }
         modePro.setOnClickListener      { switchMode("PRO") }
 
-        // Gallery
+        // Gallery preview → buka galeri
         btnGalleryPreview.setOnClickListener {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 type = "image/*"
@@ -223,12 +242,12 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // Filter (placeholder)
+        // Filter
         btnFilter.setOnClickListener {
             Toast.makeText(this, "Filter belum tersedia", Toast.LENGTH_SHORT).show()
         }
 
-        // Capture / Shutter
+        // Capture
         btnCapture.setOnClickListener {
             if (currentMode == "VIDEO" || currentMode == "VLOG") {
                 Toast.makeText(this, "Rekam video (belum diimplementasi)", Toast.LENGTH_SHORT).show()
@@ -246,10 +265,27 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // Tap to focus
+        // ============ TAP TO FOCUS (AF + AE) ============
         viewFinder.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_UP) {
+            if (event.action == MotionEvent.ACTION_UP) {
+                val factory = viewFinder.meteringPointFactory
+                val point = factory.createPoint(event.x, event.y)
+
+                val action = FocusMeteringAction.Builder(
+                    point,
+                    FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
+                ).setAutoCancelDuration(5, TimeUnit.SECONDS).build()
+
+                val cam = camera
+                if (cam != null) {
+                    cam.cameraControl.startFocusAndMetering(action)
+                        .addListener({
+                            Log.d(TAG, "Focus & metering selesai")
+                        }, ContextCompat.getMainExecutor(this))
+                }
+
                 showFocusRing(event.x, event.y)
+                return@setOnTouchListener true
             }
             false
         }
@@ -258,19 +294,11 @@ class CameraActivity : AppCompatActivity() {
     // ================== UI UPDATES ==================
     private fun updateFlashUI() {
         when (flashState) {
-            0 -> { // OFF
-                btnFlash.setImageResource(R.drawable.ic_flash_off)
-                btnFlash.alpha = 1.0f
-            }
-            1 -> { // ON
-                btnFlash.setImageResource(R.drawable.ic_flash_on)
-                btnFlash.alpha = 1.0f
-            }
-            2 -> { // AUTO
-                btnFlash.setImageResource(R.drawable.ic_flash_auto)
-                btnFlash.alpha = 1.0f
-            }
+            0 -> btnFlash.setImageResource(R.drawable.ic_flash_off)
+            1 -> btnFlash.setImageResource(R.drawable.ic_flash_on)
+            2 -> btnFlash.setImageResource(R.drawable.ic_flash_auto)
         }
+        btnFlash.alpha = 1.0f
     }
 
     private fun updateTimerUI() {
@@ -320,14 +348,18 @@ class CameraActivity : AppCompatActivity() {
         focusRing.y = y - focusRing.height / 2f
         focusRing.visibility = View.VISIBLE
         focusRing.alpha = 1f
+        focusRing.scaleX = 1.3f
+        focusRing.scaleY = 1.3f
         focusRing.animate()
+            .scaleX(1f)
+            .scaleY(1f)
             .alpha(0f)
-            .setDuration(1000)
+            .setDuration(1200)
             .withEndAction { focusRing.visibility = View.INVISIBLE }
             .start()
     }
 
-    // ================== MODE SWITCH ==================
+    // ================== MODE ==================
     private fun switchMode(newMode: String) {
         currentMode = newMode
         val inactive = Color.parseColor("#99FFFFFF")
@@ -335,8 +367,7 @@ class CameraActivity : AppCompatActivity() {
         val normal = Typeface.DEFAULT
         val bold = Typeface.DEFAULT_BOLD
 
-        val allModes = listOf(modeNight, modePortrait, modePhoto, modeVideo, modeVlog, modePro)
-        allModes.forEach {
+        listOf(modeNight, modePortrait, modePhoto, modeVideo, modeVlog, modePro).forEach {
             it.setTextColor(inactive)
             it.setTypeface(normal)
             it.textSize = 13f
@@ -372,6 +403,8 @@ class CameraActivity : AppCompatActivity() {
 
     // ================== CAMERA START ==================
     private fun startCamera() {
+        Log.d(TAG, "startCamera() dipanggil")
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             try {
@@ -393,10 +426,7 @@ class CameraActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(this, selector, preview, imageCapture)
 
-                // Terapkan zoom sesuai state
                 setSafeZoom(zoomValues[zoomIndex])
-
-                // Terapkan flash
                 applyFlashToCapture()
 
                 Log.d(TAG, "Camera bind SUCCESS")
@@ -417,7 +447,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== TIMER + CAPTURE ==================
+    // ================== CAPTURE ==================
     private fun takePhotoWithTimer() {
         val seconds = timerSeconds[timerState]
         if (seconds == 0) {
@@ -442,7 +472,7 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        // Efek shutter visual
+        // Animasi shutter
         shutterInner.animate().scaleX(0.85f).scaleY(0.85f).setDuration(80)
             .withEndAction {
                 shutterInner.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
@@ -496,6 +526,7 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
+    // ================== SAVE TO GALLERY ==================
     private fun saveBitmapToGallery(bitmap: Bitmap) {
         val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
             .format(System.currentTimeMillis())
@@ -514,6 +545,69 @@ class CameraActivity : AppCompatActivity() {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
             }
             Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
+
+            // Refresh thumbnail galeri
+            cameraExecutor.execute { loadLastPhotoThumbnail() }
+        }
+    }
+
+    // ================== LOAD THUMBNAIL GALERI ==================
+    private fun loadLastPhotoThumbnail() {
+        try {
+            val projection = arrayOf(
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.DATE_ADDED
+            )
+            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+            val selectionArgs = arrayOf("%Pictures/UcamApp%")
+            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+            val cursor = contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                sortOrder
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                    val uri = ContentUris.withAppendedId(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                    )
+
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                            decoder.isMutableRequired = false
+                            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                    }
+
+                    runOnUiThread {
+                        try {
+                            val drawable = BitmapDrawable(resources, bitmap)
+                            btnGalleryPreview.setImageDrawable(drawable)
+                            btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
+                            btnGalleryPreview.background = null
+                            btnGalleryPreview.clipToOutline = true
+                            btnGalleryPreview.outlineProvider = object : ViewOutlineProvider() {
+                                override fun getOutline(view: View, outline: Outline) {
+                                    outline.setOval(0, 0, view.width, view.height)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Thumbnail error", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "loadLastPhotoThumbnail error", e)
         }
     }
 
