@@ -298,7 +298,7 @@
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
-        <!-- Pemilih Mode Kamera (Foto, Video, Pro) -->
+        <!-- Pemilih Mode Kamera (Portrait, Foto, Video, Pro) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -351,12 +351,15 @@
             android:paddingVertical="8dp"
             android:paddingHorizontal="32dp">
 
+            <!-- Tombol Galeri Preview yang Aman (Menggunakan ikon bawaan Android) -->
             <ImageButton
                 android:id="@+id/btnGalleryPreview"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="@drawable/ic_launcher_background"
-                android:scaleType="centerCrop"
+                android:background="@android:drawable/ic_menu_gallery"
+                android:backgroundTint="#33FFFFFF"
+                android:scaleType="centerInside"
+                app:tint="@android:color/white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
