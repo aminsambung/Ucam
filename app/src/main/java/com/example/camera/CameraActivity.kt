@@ -36,13 +36,11 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var btnInfo: ImageButton
     private lateinit var btnGalleryPreview: ImageButton
 
-    // Panel Atas
     private lateinit var topPhotoControls: LinearLayout
     private lateinit var topVideoControls: LinearLayout
     private lateinit var topProControls: LinearLayout
     private lateinit var proParametersBar: LinearLayout
 
-    // Tombol Kontrol Foto
     private lateinit var btnFlashToggle: Button
     private lateinit var btnHdrToggle: Button
     private lateinit var btnMacroToggle: Button
@@ -50,26 +48,22 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var btnRawToggle: Button
     private lateinit var btnOpenSettings: ImageButton
 
-    // Tombol Kontrol Video
     private lateinit var btnVideoFlash: Button
     private lateinit var btnVideoHdr: Button
     private lateinit var btnVideoStabilization: Button
     private lateinit var btnVideoResolution: Button
     private lateinit var btnVideoSettings: ImageButton
 
-    // Tombol Kontrol Pro
     private lateinit var btnProFlash: ImageButton
     private lateinit var tvRawIndicator: TextView
     private lateinit var btnProSettings: ImageButton
 
-    // 5 Tombol Parameter Pro
     private lateinit var btnEvParam: Button
     private lateinit var btnIsoParam: Button
     private lateinit var btnShutterParam: Button
     private lateinit var btnWbParam: Button
     private lateinit var btnMfParam: Button
 
-    // Indikator Mode TextView
     private lateinit var modePortrait: TextView
     private lateinit var modeCamera: TextView
     private lateinit var modeVideo: TextView
@@ -80,7 +74,6 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var currentMode = "PRO"
 
-    // States
     private var flashState = 0
     private var isHdrEnabled = true
     private var isMacroEnabled = false
@@ -91,7 +84,6 @@ class CameraActivity : AppCompatActivity() {
     private val ratios = arrayOf("4:3", "16:9")
     private var isRawActive = true
 
-    // Parameter Pro States
     private var evIndex = 1
     private val evValues = arrayOf("EV\n-1", "EV\n0", "EV\n+1")
     private var isoIndex = 0
@@ -153,11 +145,14 @@ class CameraActivity : AppCompatActivity() {
             modePro = findViewById(R.id.modePro)
 
         } catch (e: Exception) {
-            Toast.makeText(this, "Error Inisialisasi UI: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "UI Init Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
 
         if (allPermissionsGranted()) {
-            startProCamera()
+            // Tunggu hingga PreviewView selesai dirender sebelum mengikat kamera
+            viewFinder.post {
+                startProCamera()
+            }
         } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
@@ -186,54 +181,25 @@ class CameraActivity : AppCompatActivity() {
             Toast.makeText(this, "Membuka Galeri...", Toast.LENGTH_SHORT).show()
         }
 
-        // Interaksi Tombol-tombol kontrol
         val flashClickListener = View.OnClickListener {
             flashState = (flashState + 1) % 3
             val flashText = when(flashState) { 0 -> "⚡ OFF"; 1 -> "⚡ ON"; else -> "⚡ AUTO" }
             btnFlashToggle.text = flashText
             btnVideoFlash.text = flashText
-            Toast.makeText(this, "Flash: $flashText", Toast.LENGTH_SHORT).show()
         }
         btnFlashToggle.setOnClickListener(flashClickListener)
         btnVideoFlash.setOnClickListener(flashClickListener)
         btnProFlash.setOnClickListener(flashClickListener)
 
-        btnHdrToggle.setOnClickListener {
-            isHdrEnabled = !isHdrEnabled
-            btnHdrToggle.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF"
-        }
-        btnVideoHdr.setOnClickListener {
-            isHdrEnabled = !isHdrEnabled
-            btnVideoHdr.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF"
-        }
-        btnMacroToggle.setOnClickListener {
-            isMacroEnabled = !isMacroEnabled
-            btnMacroToggle.text = if (isMacroEnabled) "MACRO: ON" else "MACRO"
-            startProCamera()
-        }
-        btnRatioToggle.setOnClickListener {
-            currentRatioIndex = (currentRatioIndex + 1) % ratios.size
-            btnRatioToggle.text = ratios[currentRatioIndex]
-            startProCamera()
-        }
-        btnRawToggle.setOnClickListener {
-            isRawActive = !isRawActive
-            btnRawToggle.text = if (isRawActive) "RAW: ON" else "RAW"
-        }
-        tvRawIndicator.setOnClickListener {
-            isRawActive = !isRawActive
-            tvRawIndicator.text = if (isRawActive) "RAW" else "JPEG"
-        }
-        btnVideoStabilization.setOnClickListener {
-            isStabilizationEnabled = !isStabilizationEnabled
-            btnVideoStabilization.text = if (isStabilizationEnabled) "STAB: ON" else "STAB: OFF"
-        }
-        btnVideoResolution.setOnClickListener {
-            videoResIndex = (videoResIndex + 1) % videoResolutions.size
-            btnVideoResolution.text = videoResolutions[videoResIndex]
-        }
+        btnHdrToggle.setOnClickListener { isHdrEnabled = !isHdrEnabled; btnHdrToggle.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF" }
+        btnVideoHdr.setOnClickListener { isHdrEnabled = !isHdrEnabled; btnVideoHdr.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF" }
+        btnMacroToggle.setOnClickListener { isMacroEnabled = !isMacroEnabled; btnMacroToggle.text = if (isMacroEnabled) "MACRO: ON" else "MACRO"; startProCamera() }
+        btnRatioToggle.setOnClickListener { currentRatioIndex = (currentRatioIndex + 1) % ratios.size; btnRatioToggle.text = ratios[currentRatioIndex]; startProCamera() }
+        btnRawToggle.setOnClickListener { isRawActive = !isRawActive; btnRawToggle.text = if (isRawActive) "RAW: ON" else "RAW" }
+        tvRawIndicator.setOnClickListener { isRawActive = !isRawActive; tvRawIndicator.text = if (isRawActive) "RAW" else "JPEG" }
+        btnVideoStabilization.setOnClickListener { isStabilizationEnabled = !isStabilizationEnabled; btnVideoStabilization.text = if (isStabilizationEnabled) "STAB: ON" else "STAB: OFF" }
+        btnVideoResolution.setOnClickListener { videoResIndex = (videoResIndex + 1) % videoResolutions.size; btnVideoResolution.text = videoResolutions[videoResIndex] }
 
-        // 5 Parameter Pro
         btnEvParam.setOnClickListener { evIndex = (evIndex + 1) % evValues.size; btnEvParam.text = evValues[evIndex] }
         btnIsoParam.setOnClickListener { isoIndex = (isoIndex + 1) % isoValues.size; btnIsoParam.text = isoValues[isoIndex] }
         btnShutterParam.setOnClickListener { shutterIndex = (shutterIndex + 1) % shutterValues.size; btnShutterParam.text = shutterValues[shutterIndex] }
@@ -245,7 +211,6 @@ class CameraActivity : AppCompatActivity() {
             else camera?.cameraControl?.setZoomRatio(1.0f)
         }
 
-        // Navigasi Mode
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
         modeCamera.setOnClickListener { switchMode("CAMERA") }
         modeVideo.setOnClickListener { switchMode("VIDEO") }
@@ -278,27 +243,10 @@ class CameraActivity : AppCompatActivity() {
         proParametersBar.visibility = View.GONE
 
         when (newMode) {
-            "PORTRAIT" -> {
-                modePortrait.setTextColor(activeColor)
-                topPhotoControls.visibility = View.VISIBLE
-                btnCapturePro.text = "PORT"
-            }
-            "CAMERA" -> {
-                modeCamera.setTextColor(activeColor)
-                topPhotoControls.visibility = View.VISIBLE
-                btnCapturePro.text = "SNAP"
-            }
-            "VIDEO" -> {
-                modeVideo.setTextColor(activeColor)
-                topVideoControls.visibility = View.VISIBLE
-                btnCapturePro.text = "REC"
-            }
-            "PRO" -> {
-                modePro.setTextColor(activeColor)
-                topProControls.visibility = View.VISIBLE
-                proParametersBar.visibility = View.VISIBLE
-                btnCapturePro.text = "PRO"
-            }
+            "PORTRAIT" -> { modePortrait.setTextColor(activeColor); topPhotoControls.visibility = View.VISIBLE; btnCapturePro.text = "PORT" }
+            "CAMERA" -> { modeCamera.setTextColor(activeColor); topPhotoControls.visibility = View.VISIBLE; btnCapturePro.text = "SNAP" }
+            "VIDEO" -> { modeVideo.setTextColor(activeColor); topVideoControls.visibility = View.VISIBLE; btnCapturePro.text = "REC" }
+            "PRO" -> { modePro.setTextColor(activeColor); topProControls.visibility = View.VISIBLE; proParametersBar.visibility = View.VISIBLE; btnCapturePro.text = "PRO" }
         }
     }
 
@@ -326,7 +274,7 @@ class CameraActivity : AppCompatActivity() {
                 else camera?.cameraControl?.setZoomRatio(1.0f)
 
             } catch (exc: Exception) {
-                Toast.makeText(this, "Gagal memuat kamera: ${exc.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Camera Init Error: ${exc.message}", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -407,8 +355,12 @@ class CameraActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) startProCamera()
-            else { Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show(); finish() }
+            if (allPermissionsGranted()) {
+                viewFinder.post { startProCamera() }
+            } else {
+                Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show()
+                finish()
+            }
         }
     }
 }
