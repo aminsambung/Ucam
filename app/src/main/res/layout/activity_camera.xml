@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Baris Kontrol Atas (Ratio, RAW, Settings) dengan Background Semi-Transparan -->
+    <!-- Baris Kontrol Atas (Ratio, RAW, Settings) -->
     <LinearLayout
         android:id="@+id/topProControls"
         android:layout_width="match_parent"
@@ -22,7 +22,6 @@
         android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Tombol Pilihan Aspek Rasio Foto -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRatioToggle"
             style="?attr/materialButtonOutlinedStyle"
@@ -35,7 +34,6 @@
             app:strokeColor="@android:color/white"
             app:cornerRadius="18dp" />
 
-        <!-- Tombol Toggle Format RAW -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRawToggle"
             style="?attr/materialButtonOutlinedStyle"
@@ -48,7 +46,6 @@
             app:strokeColor="@android:color/white"
             app:cornerRadius="18dp" />
 
-        <!-- Tombol Pengaturan -->
         <ImageButton
             android:id="@+id/btnOpenSettings"
             android:layout_width="36dp"
@@ -73,11 +70,11 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:paddingVertical="10dp">
+            android:paddingVertical="8dp">
 
             <Button
-                android:layout_width="56dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="32dp"
                 android:layout_marginHorizontal="3dp"
                 android:backgroundTint="#33FFFFFF"
                 android:text="EV"
@@ -85,8 +82,8 @@
                 android:textColor="@android:color/white" />
 
             <Button
-                android:layout_width="56dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="32dp"
                 android:layout_marginHorizontal="3dp"
                 android:backgroundTint="#33FFFFFF"
                 android:text="ISO"
@@ -94,8 +91,8 @@
                 android:textColor="@android:color/white" />
 
             <Button
-                android:layout_width="56dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="32dp"
                 android:layout_marginHorizontal="3dp"
                 android:backgroundTint="#33FFFFFF"
                 android:text="S"
@@ -103,8 +100,8 @@
                 android:textColor="@android:color/white" />
 
             <Button
-                android:layout_width="56dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="32dp"
                 android:layout_marginHorizontal="3dp"
                 android:backgroundTint="#33FFFFFF"
                 android:text="WB"
@@ -112,8 +109,8 @@
                 android:textColor="@android:color/white" />
 
             <Button
-                android:layout_width="56dp"
-                android:layout_height="36dp"
+                android:layout_width="52dp"
+                android:layout_height="32dp"
                 android:layout_marginHorizontal="3dp"
                 android:backgroundTint="#33FFFFFF"
                 android:text="MF"
@@ -121,18 +118,67 @@
                 android:textColor="@android:color/white" />
         </LinearLayout>
 
+        <!-- Pemilih Mode Kamera (Portrait, Camera, Video, Pro) di atas Shutter -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:id="@+id/modePortrait"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:text="PORTRAIT"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modeCamera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:text="CAMERA"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modeVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:text="VIDEO"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modePro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:text="PRO"
+                android:textColor="#99FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Baris Shutter, Preview Galeri, dan Switch Kamera -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingVertical="12dp"
+            android:paddingVertical="8dp"
             android:paddingHorizontal="32dp">
 
             <!-- Tombol Preview / Thumbnail Foto Terakhir (Kiri Bawah) -->
             <ImageButton
                 android:id="@+id/btnGalleryPreview"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="@drawable/ic_launcher_background"
                 android:scaleType="centerCrop"
                 android:contentDescription="Galeri Preview"
@@ -143,14 +189,14 @@
             <!-- Tombol Shutter / SNAP Melingkar (Tengah) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCapturePro"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:backgroundTint="#FF3B30"
                 android:text="SNAP"
                 android:textColor="@android:color/white"
                 android:textSize="12sp"
                 android:textStyle="bold"
-                app:cornerRadius="38dp"
+                app:cornerRadius="36dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -159,8 +205,8 @@
             <!-- Tombol Switch Kamera Depan/Belakang (Kanan Bawah) -->
             <ImageButton
                 android:id="@+id/btnSwitchCamera"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_camera"
                 android:scaleType="centerInside"
