@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#CC000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="40dp"
+        android:paddingHorizontal="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="12dp">
+
+            <ImageButton
+                android:id="@+id/btnCloseSettings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                app:tint="@android:color/white" />
+
+            <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pengaturan Lainnya"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+
+            <View android:layout_width="40dp" android:layout_height="40dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#1AFFFFFF"
+            android:padding="4dp"
+            android:layout_marginTop="8dp">
+
+            <TextView android:id="@+id/ratio11" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="1:1" android:textColor="@android:color/white" android:textSize="14sp" />
+            <TextView android:id="@+id/ratio43" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="4:3" android:textColor="@android:color/white" android:textSize="14sp" />
+            <TextView android:id="@+id/ratio169" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="16:9" android:textColor="@android:color/white" android:textSize="14sp" />
+            <TextView android:id="@+id/ratioFull" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="Penuh" android:textColor="#000000" android:textSize="14sp" android:background="#FFC107" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#1AFFFFFF"
+            android:padding="4dp"
+            android:layout_marginTop="8dp">
+
+            <TextView android:id="@+id/timerOff" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="Mati" android:textColor="#000000" android:background="#FFC107" android:textSize="14sp" />
+            <TextView android:id="@+id/timer3" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="3 dtk" android:textColor="@android:color/white" android:textSize="14sp" />
+            <TextView android:id="@+id/timer5" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="5 dtk" android:textColor="@android:color/white" android:textSize="14sp" />
+            <TextView android:id="@+id/timer10" android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1" android:gravity="center" android:text="10 dtk" android:textColor="@android:color/white" android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView android:id="@+id/btnGrid" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFFFFF" android:text="Garis kisi  #" android:textColor="#000000" android:textSize="13sp" android:layout_marginEnd="4dp" />
+            <TextView android:id="@+id/btnLevel" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFFFFF" android:text="Pengukur  Ω" android:textColor="#000000" android:textSize="13sp" android:layout_marginEnd="4dp" />
+            <TextView android:id="@+id/btnStabilizer" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFC107" android:text="Stabilisator  ⊙" android:textColor="#000000" android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView android:id="@+id/btnMasterEffect" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFC107" android:text="Master Efek" android:textColor="#000000" android:textSize="13sp" android:layout_marginEnd="4dp" />
+            <TextView android:id="@+id/btnWatermark" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFFFFF" android:text="Tanda Air" android:textColor="#000000" android:textSize="13sp" android:layout_marginEnd="4dp" />
+            <TextView android:id="@+id/btnFocusPeaking" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:gravity="center" android:background="#FFFFFF" android:text="Fokus" android:textColor="#000000" android:textSize="13sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</FrameLayout>
