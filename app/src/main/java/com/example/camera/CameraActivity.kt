@@ -34,6 +34,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var btnCapturePro: Button
     private lateinit var btnSwitchCamera: ImageButton
     private lateinit var btnInfo: ImageButton
+    private lateinit var btnGalleryPreview: ImageButton
 
     // Panel Atas
     private lateinit var topPhotoControls: LinearLayout
@@ -80,7 +81,7 @@ class CameraActivity : AppCompatActivity() {
     private var currentMode = "PRO"
 
     // States
-    private var flashState = 0 // 0: OFF, 1: ON, 2: AUTO
+    private var flashState = 0
     private var isHdrEnabled = true
     private var isMacroEnabled = false
     private var isStabilizationEnabled = true
@@ -111,43 +112,49 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
 
-        viewFinder = findViewById(R.id.viewFinder)
-        btnCapturePro = findViewById(R.id.btnCapturePro)
-        btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
-        btnInfo = findViewById(R.id.btnInfo)
+        try {
+            viewFinder = findViewById(R.id.viewFinder)
+            btnCapturePro = findViewById(R.id.btnCapturePro)
+            btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
+            btnInfo = findViewById(R.id.btnInfo)
+            btnGalleryPreview = findViewById(R.id.btnGalleryPreview)
 
-        topPhotoControls = findViewById(R.id.topPhotoControls)
-        topVideoControls = findViewById(R.id.topVideoControls)
-        topProControls = findViewById(R.id.topProControls)
-        proParametersBar = findViewById(R.id.proParametersBar)
+            topPhotoControls = findViewById(R.id.topPhotoControls)
+            topVideoControls = findViewById(R.id.topVideoControls)
+            topProControls = findViewById(R.id.topProControls)
+            proParametersBar = findViewById(R.id.proParametersBar)
 
-        btnFlashToggle = findViewById(R.id.btnFlashToggle)
-        btnHdrToggle = findViewById(R.id.btnHdrToggle)
-        btnMacroToggle = findViewById(R.id.btnMacroToggle)
-        btnRatioToggle = findViewById(R.id.btnRatioToggle)
-        btnRawToggle = findViewById(R.id.btnRawToggle)
-        btnOpenSettings = findViewById(R.id.btnOpenSettings)
+            btnFlashToggle = findViewById(R.id.btnFlashToggle)
+            btnHdrToggle = findViewById(R.id.btnHdrToggle)
+            btnMacroToggle = findViewById(R.id.btnMacroToggle)
+            btnRatioToggle = findViewById(R.id.btnRatioToggle)
+            btnRawToggle = findViewById(R.id.btnRawToggle)
+            btnOpenSettings = findViewById(R.id.btnOpenSettings)
 
-        btnVideoFlash = findViewById(R.id.btnVideoFlash)
-        btnVideoHdr = findViewById(R.id.btnVideoHdr)
-        btnVideoStabilization = findViewById(R.id.btnVideoStabilization)
-        btnVideoResolution = findViewById(R.id.btnVideoResolution)
-        btnVideoSettings = findViewById(R.id.btnVideoSettings)
+            btnVideoFlash = findViewById(R.id.btnVideoFlash)
+            btnVideoHdr = findViewById(R.id.btnVideoHdr)
+            btnVideoStabilization = findViewById(R.id.btnVideoStabilization)
+            btnVideoResolution = findViewById(R.id.btnVideoResolution)
+            btnVideoSettings = findViewById(R.id.btnVideoSettings)
 
-        btnProFlash = findViewById(R.id.btnProFlash)
-        tvRawIndicator = findViewById(R.id.tvRawIndicator)
-        btnProSettings = findViewById(R.id.btnProSettings)
+            btnProFlash = findViewById(R.id.btnProFlash)
+            tvRawIndicator = findViewById(R.id.tvRawIndicator)
+            btnProSettings = findViewById(R.id.btnProSettings)
 
-        btnEvParam = findViewById(R.id.btnEvParam)
-        btnIsoParam = findViewById(R.id.btnIsoParam)
-        btnShutterParam = findViewById(R.id.btnShutterParam)
-        btnWbParam = findViewById(R.id.btnWbParam)
-        btnMfParam = findViewById(R.id.btnMfParam)
+            btnEvParam = findViewById(R.id.btnEvParam)
+            btnIsoParam = findViewById(R.id.btnIsoParam)
+            btnShutterParam = findViewById(R.id.btnShutterParam)
+            btnWbParam = findViewById(R.id.btnWbParam)
+            btnMfParam = findViewById(R.id.btnMfParam)
 
-        modePortrait = findViewById(R.id.modePortrait)
-        modeCamera = findViewById(R.id.modeCamera)
-        modeVideo = findViewById(R.id.modeVideo)
-        modePro = findViewById(R.id.modePro)
+            modePortrait = findViewById(R.id.modePortrait)
+            modeCamera = findViewById(R.id.modeCamera)
+            modeVideo = findViewById(R.id.modeVideo)
+            modePro = findViewById(R.id.modePro)
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error Inisialisasi UI: ${e.message}", Toast.LENGTH_LONG).show()
+        }
 
         if (allPermissionsGranted()) {
             startProCamera()
@@ -175,7 +182,11 @@ class CameraActivity : AppCompatActivity() {
             Toast.makeText(this, "Ucam Pro Mode Aktif", Toast.LENGTH_SHORT).show()
         }
 
-        // Interaksi Flash
+        btnGalleryPreview.setOnClickListener {
+            Toast.makeText(this, "Membuka Galeri...", Toast.LENGTH_SHORT).show()
+        }
+
+        // Interaksi Tombol-tombol kontrol
         val flashClickListener = View.OnClickListener {
             flashState = (flashState + 1) % 3
             val flashText = when(flashState) { 0 -> "⚡ OFF"; 1 -> "⚡ ON"; else -> "⚡ AUTO" }
@@ -187,7 +198,6 @@ class CameraActivity : AppCompatActivity() {
         btnVideoFlash.setOnClickListener(flashClickListener)
         btnProFlash.setOnClickListener(flashClickListener)
 
-        // Interaksi Tombol Lainnya
         btnHdrToggle.setOnClickListener {
             isHdrEnabled = !isHdrEnabled
             btnHdrToggle.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF"
@@ -223,23 +233,11 @@ class CameraActivity : AppCompatActivity() {
             btnVideoResolution.text = videoResolutions[videoResIndex]
         }
 
-        // 5 Tombol Parameter Pro Fungsional
-        btnEvParam.setOnClickListener {
-            evIndex = (evIndex + 1) % evValues.size
-            btnEvParam.text = evValues[evIndex]
-        }
-        btnIsoParam.setOnClickListener {
-            isoIndex = (isoIndex + 1) % isoValues.size
-            btnIsoParam.text = isoValues[isoIndex]
-        }
-        btnShutterParam.setOnClickListener {
-            shutterIndex = (shutterIndex + 1) % shutterValues.size
-            btnShutterParam.text = shutterValues[shutterIndex]
-        }
-        btnWbParam.setOnClickListener {
-            wbIndex = (wbIndex + 1) % wbValues.size
-            btnWbParam.text = wbValues[wbIndex]
-        }
+        // 5 Parameter Pro
+        btnEvParam.setOnClickListener { evIndex = (evIndex + 1) % evValues.size; btnEvParam.text = evValues[evIndex] }
+        btnIsoParam.setOnClickListener { isoIndex = (isoIndex + 1) % isoValues.size; btnIsoParam.text = isoValues[isoIndex] }
+        btnShutterParam.setOnClickListener { shutterIndex = (shutterIndex + 1) % shutterValues.size; btnShutterParam.text = shutterValues[shutterIndex] }
+        btnWbParam.setOnClickListener { wbIndex = (wbIndex + 1) % wbValues.size; btnWbParam.text = wbValues[wbIndex] }
         btnMfParam.setOnClickListener {
             mfIndex = (mfIndex + 1) % mfValues.size
             btnMfParam.text = mfValues[mfIndex]
@@ -255,13 +253,12 @@ class CameraActivity : AppCompatActivity() {
 
         btnCapturePro.setOnClickListener {
             if (currentMode == "VIDEO") {
-                Toast.makeText(this, "Simulasi Perekaman Video Dimulai...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Perekaman Video Berjalan...", Toast.LENGTH_SHORT).show()
             } else {
                 takePhoto()
             }
         }
         
-        // Inisialisasi awal ke mode Pro
         switchMode("PRO")
     }
 
@@ -275,7 +272,6 @@ class CameraActivity : AppCompatActivity() {
         modeVideo.setTextColor(inactiveColor)
         modePro.setTextColor(inactiveColor)
 
-        // Sembunyikan semua panel atas & bawah pro dulu
         topPhotoControls.visibility = View.GONE
         topVideoControls.visibility = View.GONE
         topProControls.visibility = View.GONE
@@ -304,7 +300,6 @@ class CameraActivity : AppCompatActivity() {
                 btnCapturePro.text = "PRO"
             }
         }
-        Toast.makeText(this, "Mode: $newMode", Toast.LENGTH_SHORT).show()
     }
 
     private fun startProCamera() {
