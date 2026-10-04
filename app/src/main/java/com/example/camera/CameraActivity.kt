@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
@@ -14,6 +13,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -29,12 +29,16 @@ class CameraActivity : AppCompatActivity() {
 
     private lateinit var viewFinder: PreviewView
     private lateinit var btnCapturePro: Button
-    private lateinit var btnOpenSettings: Button
+    private lateinit var btnOpenSettings: ImageButton
     private lateinit var btnRawToggle: Button
+    private lateinit var btnRatioToggle: Button
 
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
     private var isRawEnabled = false
+
+    private var currentRatioIndex = 0
+    private val ratios = arrayOf("4:3", "16:9")
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -49,6 +53,7 @@ class CameraActivity : AppCompatActivity() {
         btnCapturePro = findViewById(R.id.btnCapturePro)
         btnOpenSettings = findViewById(R.id.btnOpenSettings)
         btnRawToggle = findViewById(R.id.btnRawToggle)
+        btnRatioToggle = findViewById(R.id.btnRatioToggle)
 
         if (allPermissionsGranted()) {
             startProCamera()
@@ -72,7 +77,17 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // Tombol Jepret dengan Pemrosesan Peningkatan Kualitas Otomatis (Computational Feel)
+        btnRatioToggle.setOnClickListener {
+            currentRatioIndex = (currentRatioIndex + 1) % ratios.size
+            val selectedRatio = ratios[currentRatioIndex]
+            btnRatioToggle.text = selectedRatio
+            Toast.makeText(this, "Rasio diubah ke $selectedRatio", Toast.LENGTH_SHORT).show()
+            
+            // Muat ulang konfigurasi kamera dengan rasio baru
+            startProCamera()
+        }
+
+        // Tombol Jepret dengan Pemrosesan Peningkatan Kualitas Otomatis
         btnCapturePro.setOnClickListener {
             takeEnhancedPhoto()
         }
@@ -88,9 +103,17 @@ class CameraActivity : AppCompatActivity() {
                 it.setSurfaceProvider(viewFinder.surfaceProvider)
             }
 
-            // Menggunakan setCaptureMode dengan kualitas maksimal untuk ketajaman sensor
+            // Menyesuaikan target rasio berdasarkan pilihan tombol UI
+            val aspectRatio = if (ratios[currentRatioIndex] == "16:9") {
+                AspectRatio.RATIO_16_9
+            } else {
+                AspectRatio.RATIO_4_3
+            }
+
+            // Menggunakan setCaptureMode dengan kualitas maksimal serta aspek rasio
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                .setTargetAspectRatio(aspectRatio)
                 .build()
 
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -131,7 +154,7 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    // Fungsi Simulasi Computational Photography (Menaikkan kontras, ketajaman, dan saturasi warna ala GCam/iPhone)
+    // Fungsi Simulasi Computational Photography (Menaikkan kontras, ketajaman, dan saturasi warna)
     private fun applyComputationalEnhancement(src: Bitmap): Bitmap {
         val width = src.width
         val height = src.height
@@ -140,10 +163,9 @@ class CameraActivity : AppCompatActivity() {
         val canvas = Canvas(dest)
         val paint = Paint()
 
-        // ColorMatrix untuk meningkatkan kontras & saturasi warna (membuat warna lebih hidup dan sinematik)
+        // ColorMatrix untuk meningkatkan saturasi warna
         val colorMatrix = ColorMatrix().apply {
-            // Meningkatkan sedikit saturasi dan kontras (meniru gaya pemrosesan HDR)
-            setSaturation(1.15f) // Warna sedikit lebih kaya
+            setSaturation(1.15f)
         }
 
         // Matriks skala untuk menaikkan sedikit kecerahan/kontras
