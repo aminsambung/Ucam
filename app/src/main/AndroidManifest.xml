@@ -2,12 +2,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Izin untuk mengakses kamera perangkat -->
+    <!-- ====== IZIN KAMERA & AUDIO ====== -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-feature android:name="android.hardware.camera.any" />
+
+    <!-- ====== IZIN PENYIMPANAN (untuk simpan & baca foto) ====== -->
+    <!-- Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Android 12 ke bawah -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-    android:maxSdkVersion="32" />
+        android:maxSdkVersion="32" />
+    <!-- Android 9 ke bawah (untuk tulis) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- ====== FITUR KAMERA ====== -->
+    <uses-feature android:name="android.hardware.camera.any" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -18,15 +29,19 @@
         android:theme="@style/Theme.MyCameraApp"
         tools:targetApi="31">
 
-        <!-- Daftarkan Activity kamera Anda di sini -->
+        <!-- ====== SETTINGS ACTIVITY ====== -->
         <activity
             android:name=".SettingsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ====== CAMERA ACTIVITY (LAUNCHER) ====== -->
         <activity
             android:name=".CameraActivity"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.MyCameraApp">
             <intent-filter>
-                <!-- Menjadikan CameraActivity sebagai halaman utama saat aplikasi dibuka -->
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
