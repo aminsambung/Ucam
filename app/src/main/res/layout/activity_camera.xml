@@ -1,382 +1,293 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Preview Kamera Penuh -->
+    <!-- Preview Kamera Fullscreen -->
     <androidx.camera.view.PreviewView
         android:id="@+id/viewFinder"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 1. Baris Kontrol Atas: Mode Foto & Standar -->
+    <!-- ============ FOCUS RING (tengah) ============ -->
+    <View
+        android:id="@+id/focusRing"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_focus_ring"
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- ============ TOP BAR ============ -->
     <LinearLayout
-        android:id="@+id/topPhotoControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end|center_vertical"
-        android:background="#99000000"
-        android:padding="8dp"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnFlashToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="4dp"
-            android:text="⚡ OFF"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnHdrToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="4dp"
-            android:text="HDR: ON"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMacroToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="4dp"
-            android:text="MACRO"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRatioToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="4dp"
-            android:text="4:3"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRawToggle"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="RAW"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <ImageButton
-            android:id="@+id/btnOpenSettings"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_preferences"
-            app:tint="@android:color/white" />
-    </LinearLayout>
-
-    <!-- 2. Baris Kontrol Atas: Mode Video (5 Item) -->
-    <LinearLayout
-        android:id="@+id/topVideoControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="end|center_vertical"
-        android:background="#99000000"
-        android:padding="8dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoFlash"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="⚡ OFF"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoHdr"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="HDR"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoStabilization"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="STAB: ON"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVideoResolution"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginEnd="6dp"
-            android:text="1080p 30"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            app:strokeColor="@android:color/white"
-            app:cornerRadius="17dp" />
-
-        <ImageButton
-            android:id="@+id/btnVideoSettings"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_preferences"
-            app:tint="@android:color/white" />
-    </LinearLayout>
-
-    <!-- 3. Baris Kontrol Atas: Mode Pro (3 Item) -->
-    <LinearLayout
-        android:id="@+id/topProControls"
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#99000000"
-        android:padding="12dp"
-        android:visibility="gone"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
         app:layout_constraintTop_toTopOf="parent">
 
+        <!-- Flash -->
         <ImageButton
-            android:id="@+id/btnProFlash"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:id="@+id/btnFlash"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_camera"
+            android:src="@drawable/ic_flash_off"
             app:tint="@android:color/white" />
 
+        <!-- HDR teks -->
         <TextView
-            android:id="@+id/tvRawIndicator"
-            android:layout_width="0dp"
+            android:id="@+id/btnHdr"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="RAW"
+            android:layout_marginStart="20dp"
+            android:text="HDR"
             android:textColor="@android:color/white"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:letterSpacing="0.1"
+            android:padding="8dp" />
 
+        <!-- Spacer biar timer & settings ke kanan -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- Timer -->
         <ImageButton
-            android:id="@+id/btnProSettings"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:id="@+id/btnTimer"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_timer_off"
+            app:tint="@android:color/white" />
+
+        <!-- Settings -->
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_preferences"
             app:tint="@android:color/white" />
     </LinearLayout>
 
-    <!-- Tombol Samping Kanan (Info & Switch Kamera) -->
-    <LinearLayout
+    <!-- Timer text di bawah top bar -->
+    <TextView
+        android:id="@+id/tvTimerText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:text="( 00 , 00 )"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        android:letterSpacing="0.15"
+        android:layout_marginTop="4dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="56dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <ImageButton
-            android:id="@+id/btnInfo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginBottom="12dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_info_details"
-            app:tint="@android:color/white" />
-
-        <ImageButton
-            android:id="@+id/btnSwitchCamera"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_rotate"
-            app:tint="@android:color/white" />
-    </LinearLayout>
-
-    <!-- Panel Kontrol Bawah -->
+    <!-- ============ BOTTOM SECTION ============ -->
     <LinearLayout
+        android:id="@+id/bottomSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#99000000"
-        android:paddingBottom="24dp"
+        android:background="#00000000"
+        android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- 5 Parameter Pro (Khusus Mode Pro) -->
+        <!-- ---- Zoom Selector (0.6 / 1x / 2) ---- -->
         <LinearLayout
-            android:id="@+id/proParametersBar"
-            android:layout_width="match_parent"
+            android:id="@+id/zoomBar"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingVertical="10dp"
-            android:visibility="gone">
-
-            <Button
-                android:id="@+id/btnEvParam"
-                android:layout_width="56dp"
-                android:layout_height="40dp"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#22FFFFFF"
-                android:text="EV\n0"
-                android:textSize="9sp"
-                android:textColor="@android:color/white" />
-
-            <Button
-                android:id="@+id/btnIsoParam"
-                android:layout_width="56dp"
-                android:layout_height="40dp"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#22FFFFFF"
-                android:text="ISO\nAuto"
-                android:textSize="9sp"
-                android:textColor="@android:color/white" />
-
-            <Button
-                android:id="@+id/btnShutterParam"
-                android:layout_width="56dp"
-                android:layout_height="40dp"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#22FFFFFF"
-                android:text="S\nAuto"
-                android:textSize="9sp"
-                android:textColor="@android:color/white" />
-
-            <Button
-                android:id="@+id/btnWbParam"
-                android:layout_width="56dp"
-                android:layout_height="40dp"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#22FFFFFF"
-                android:text="WB\nAuto"
-                android:textSize="9sp"
-                android:textColor="@android:color/white" />
-
-            <Button
-                android:id="@+id/btnMfParam"
-                android:layout_width="56dp"
-                android:layout_height="40dp"
-                android:layout_marginHorizontal="3dp"
-                android:backgroundTint="#22FFFFFF"
-                android:text="MF\nAuto"
-                android:textSize="9sp"
-                android:textColor="@android:color/white" />
-        </LinearLayout>
-
-        <!-- Pemilih Mode Kamera (Portrait, Foto, Video, Pro) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
+            android:gravity="center_vertical"
             android:paddingVertical="8dp">
 
             <TextView
-                android:id="@+id/modePortrait"
+                android:id="@+id/zoom06"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:text="Portrait"
+                android:text="0,6"
                 android:textColor="#99FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                android:paddingHorizontal="6dp" />
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="3dp"
+                android:background="#99FFFFFF"
+                android:layout_marginHorizontal="2dp" />
 
             <TextView
-                android:id="@+id/modeCamera"
+                android:id="@+id/zoom1x"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:text="Foto"
-                android:textColor="#99FFFFFF"
-                android:textSize="12sp" />
+                android:text="1x"
+                android:textColor="#FFC107"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="6dp" />
+
+            <View
+                android:layout_width="3dp"
+                android:layout_height="3dp"
+                android:background="#99FFFFFF"
+                android:layout_marginHorizontal="2dp" />
 
             <TextView
-                android:id="@+id/modeVideo"
+                android:id="@+id/zoom2x"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:text="Video"
+                android:text="2"
                 android:textColor="#99FFFFFF"
-                android:textSize="12sp" />
-
-            <TextView
-                android:id="@+id/modePro"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="12dp"
-                android:text="Pro"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textSize="12sp"
+                android:paddingHorizontal="6dp" />
         </LinearLayout>
 
-        <!-- Baris Shutter, Gallery Preview, dan Switch Kamera -->
+        <!-- ---- Mode Selector (horizontal scroll) ---- -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingVertical="10dp">
+
+            <LinearLayout
+                android:id="@+id/modeBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    android:id="@+id/modeNight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Malam"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="14dp" />
+
+                <TextView
+                    android:id="@+id/modePortrait"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Potret"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="14dp" />
+
+                <TextView
+                    android:id="@+id/modePhoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Foto"
+                    android:textColor="#FFC107"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="14dp" />
+
+                <TextView
+                    android:id="@+id/modeVideo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Video"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="14dp" />
+
+                <TextView
+                    android:id="@+id/modeVlog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Film Vlog"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="14dp" />
+
+                <TextView
+                    android:id="@+id/modePro"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pro"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="14dp" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- ---- Bottom Row: Galeri | Shutter | Switch ---- -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingVertical="8dp"
-            android:paddingHorizontal="32dp">
+            android:paddingHorizontal="28dp"
+            android:paddingTop="6dp">
 
-            <!-- Tombol Galeri Preview yang Aman (Menggunakan ikon bawaan Android) -->
+            <!-- Galeri preview (kiri) -->
             <ImageButton
                 android:id="@+id/btnGalleryPreview"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="@android:drawable/ic_menu_gallery"
-                android:backgroundTint="#33FFFFFF"
-                android:scaleType="centerInside"
-                app:tint="@android:color/white"
+                android:background="@drawable/bg_gallery_preview"
+                android:scaleType="centerCrop"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCapturePro"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:backgroundTint="#FF3B30"
-                android:text="SNAP"
-                android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                app:cornerRadius="36dp"
+            <!-- Tombol Filter (ikon bintang) - di atas galeri -->
+            <ImageButton
+                android:id="@+id/btnFilter"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/star_on"
+                app:tint="@android:color/white"
+                app:layout_constraintBottom_toTopOf="@id/btnGalleryPreview"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Shutter button (tengah) -->
+            <FrameLayout
+                android:id="@+id/btnCapture"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:background="@drawable/bg_shutter_outer"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <View
+                    android:id="@+id/shutterInner"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_shutter_inner" />
+            </FrameLayout>
+
+            <!-- Switch Camera (kanan) -->
+            <ImageButton
+                android:id="@+id/btnSwitchCamera"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_switch_camera"
+                app:tint="@android:color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
