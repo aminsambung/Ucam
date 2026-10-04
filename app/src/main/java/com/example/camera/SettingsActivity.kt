@@ -60,8 +60,3 @@ class SettingsActivity : AppCompatActivity() {
         return true
     }
 }
-
-
-
-
-app/src/main/java/com/example/camera/SettingsActivity.kt
