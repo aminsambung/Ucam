@@ -200,8 +200,3 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 }
-
-
-
-
-app/src/main/java/com/example/camera/CameraActivity.kt
