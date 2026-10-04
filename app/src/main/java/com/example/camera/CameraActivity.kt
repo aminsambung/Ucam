@@ -1,6 +1,7 @@
 package com.example.camera
 
 import android.Manifest
+import android.app.Dialog
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Intent
@@ -22,6 +23,8 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
+import android.view.Window
+import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
@@ -85,25 +88,22 @@ class CameraActivity : AppCompatActivity() {
 
     private var flashState = 0
     private var isHdrEnabled = true
-    private var isRawActive = false
 
     private var zoomIndex = 1
     private val zoomValues = floatArrayOf(0.6f, 1.0f, 2.0f)
 
     private var timerState = 0
-    private val timerSeconds = intArrayOf(0, 3, 10)
+    private val timerSeconds = intArrayOf(0, 3, 5, 10)
 
-    // Parameter Pro (disimpan untuk future use)
-    private var evIndex = 1
-    private val evValues = arrayOf("EV\n-1", "EV\n0", "EV\n+1")
-    private var isoIndex = 0
-    private val isoValues = arrayOf("ISO\nAuto", "ISO\n100", "ISO\n400", "ISO\n1600")
-    private var shutterIndex = 0
-    private val shutterValues = arrayOf("S\nAuto", "S\n1/125", "S\n1/500", "S\n1/2000")
-    private var wbIndex = 0
-    private val wbValues = arrayOf("WB\nAuto", "WB\nDaylight", "WB\nCloudy")
-    private var mfIndex = 0
-    private val mfValues = arrayOf("MF\nAuto", "MF\nMacro", "MF\nInfinity")
+    // Panel settings state
+    private var currentRatio = "FULL"     // 1:1, 4:3, 16:9, FULL
+    private var currentTimer = 0          // 0=off, 1=3s, 2=5s, 3=10s
+    private var currentGrid = 0           // 0=off, 1=3x3, 2=4x4, 3=golden
+    private var isLevelOn = false
+    private var isStabilizerOn = true
+    private var isMasterEffectOn = false
+    private var isWatermarkOn = false
+    private var isFocusPeakingOn = false
 
     private lateinit var cameraExecutor: ExecutorService
 
@@ -137,7 +137,6 @@ class CameraActivity : AppCompatActivity() {
         updateTimerUI()
         updateZoomUI()
 
-        // Muat thumbnail foto terakhir
         cameraExecutor.execute { loadLastPhotoThumbnail() }
     }
 
@@ -148,7 +147,6 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh thumbnail saat kembali dari galeri
         if (::cameraExecutor.isInitialized) {
             cameraExecutor.execute { loadLastPhotoThumbnail() }
         }
@@ -187,41 +185,33 @@ class CameraActivity : AppCompatActivity() {
 
     // ================== LISTENERS ==================
     private fun setupListeners() {
-        // Flash: OFF → ON → AUTO
         btnFlash.setOnClickListener {
             flashState = (flashState + 1) % 3
             updateFlashUI()
             applyFlashToCapture()
         }
 
-        // HDR toggle
         btnHdr.setOnClickListener {
             isHdrEnabled = !isHdrEnabled
             btnHdr.alpha = if (isHdrEnabled) 1.0f else 0.4f
-            Toast.makeText(
-                this,
-                if (isHdrEnabled) "HDR: ON" else "HDR: OFF",
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, if (isHdrEnabled) "HDR: ON" else "HDR: OFF", Toast.LENGTH_SHORT).show()
         }
 
-        // Timer
         btnTimer.setOnClickListener {
-            timerState = (timerState + 1) % 3
+            timerState = (timerState + 1) % timerSeconds.size
+            currentTimer = timerState
             updateTimerUI()
         }
 
-        // Settings
+        // ⚙️ Buka panel overlay
         btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
+            showSettingsOverlay()
         }
 
-        // Zoom
         zoom06.setOnClickListener { setZoomByIndex(0) }
         zoom1x.setOnClickListener  { setZoomByIndex(1) }
         zoom2x.setOnClickListener  { setZoomByIndex(2) }
 
-        // Mode
         modeNight.setOnClickListener    { switchMode("NIGHT") }
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
         modePhoto.setOnClickListener    { switchMode("PHOTO") }
@@ -229,7 +219,6 @@ class CameraActivity : AppCompatActivity() {
         modeVlog.setOnClickListener     { switchMode("VLOG") }
         modePro.setOnClickListener      { switchMode("PRO") }
 
-        // Gallery preview → buka galeri
         btnGalleryPreview.setOnClickListener {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 type = "image/*"
@@ -242,12 +231,10 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // Filter
         btnFilter.setOnClickListener {
             Toast.makeText(this, "Filter belum tersedia", Toast.LENGTH_SHORT).show()
         }
 
-        // Capture
         btnCapture.setOnClickListener {
             if (currentMode == "VIDEO" || currentMode == "VLOG") {
                 Toast.makeText(this, "Rekam video (belum diimplementasi)", Toast.LENGTH_SHORT).show()
@@ -256,7 +243,6 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // Switch camera
         btnSwitchCamera.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
                 CameraSelector.LENS_FACING_FRONT
@@ -276,19 +262,135 @@ class CameraActivity : AppCompatActivity() {
                     FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
                 ).setAutoCancelDuration(5, TimeUnit.SECONDS).build()
 
-                val cam = camera
-                if (cam != null) {
-                    cam.cameraControl.startFocusAndMetering(action)
-                        .addListener({
-                            Log.d(TAG, "Focus & metering selesai")
-                        }, ContextCompat.getMainExecutor(this))
-                }
+                camera?.cameraControl?.startFocusAndMetering(action)
+                    ?.addListener({
+                        Log.d(TAG, "Focus & metering selesai")
+                    }, ContextCompat.getMainExecutor(this))
 
                 showFocusRing(event.x, event.y)
                 return@setOnTouchListener true
             }
             false
         }
+    }
+
+    // ================== SETTINGS OVERLAY ==================
+    private fun showSettingsOverlay() {
+        val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.activity_settings_overlay)
+
+        dialog.window?.apply {
+            setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+            setBackgroundDrawableResource(android.R.color.transparent)
+        }
+
+        val btnClose      = dialog.findViewById<ImageButton>(R.id.btnCloseSettings)
+        val ratio11       = dialog.findViewById<TextView>(R.id.ratio11)
+        val ratio43       = dialog.findViewById<TextView>(R.id.ratio43)
+        val ratio169      = dialog.findViewById<TextView>(R.id.ratio169)
+        val ratioFull     = dialog.findViewById<TextView>(R.id.ratioFull)
+        val timerOff      = dialog.findViewById<TextView>(R.id.timerOff)
+        val timer3        = dialog.findViewById<TextView>(R.id.timer3)
+        val timer5        = dialog.findViewById<TextView>(R.id.timer5)
+        val timer10       = dialog.findViewById<TextView>(R.id.timer10)
+        val btnGrid       = dialog.findViewById<TextView>(R.id.btnGrid)
+        val btnLevel      = dialog.findViewById<TextView>(R.id.btnLevel)
+        val btnStabilizer = dialog.findViewById<TextView>(R.id.btnStabilizer)
+        val btnMaster     = dialog.findViewById<TextView>(R.id.btnMasterEffect)
+        val btnWatermark  = dialog.findViewById<TextView>(R.id.btnWatermark)
+        val btnFocus      = dialog.findViewById<TextView>(R.id.btnFocusPeaking)
+
+        fun styleGroup(view: TextView, active: Boolean, group: List<TextView>) {
+            group.forEach {
+                it.setBackgroundColor(Color.WHITE)
+                it.setTextColor(Color.BLACK)
+            }
+            if (active) {
+                view.setBackgroundColor(Color.parseColor("#FFC107"))
+                view.setTextColor(Color.BLACK)
+            }
+        }
+
+        val ratioGroup = listOf(ratio11, ratio43, ratio169, ratioFull)
+        val timerGroup = listOf(timerOff, timer3, timer5, timer10)
+
+        // Set state awal
+        when (currentRatio) {
+            "1:1" -> styleGroup(ratio11, true, ratioGroup)
+            "4:3" -> styleGroup(ratio43, true, ratioGroup)
+            "16:9" -> styleGroup(ratio169, true, ratioGroup)
+            else -> styleGroup(ratioFull, true, ratioGroup)
+        }
+        when (currentTimer) {
+            0 -> styleGroup(timerOff, true, timerGroup)
+            1 -> styleGroup(timer3, true, timerGroup)
+            2 -> styleGroup(timer5, true, timerGroup)
+            3 -> styleGroup(timer10, true, timerGroup)
+        }
+        btnGrid.background.setTint(if (currentGrid > 0) Color.parseColor("#FFC107") else Color.WHITE)
+        btnLevel.background.setTint(if (isLevelOn) Color.parseColor("#FFC107") else Color.WHITE)
+        btnStabilizer.background.setTint(if (isStabilizerOn) Color.parseColor("#FFC107") else Color.WHITE)
+        btnMaster.background.setTint(if (isMasterEffectOn) Color.parseColor("#FFC107") else Color.WHITE)
+        btnWatermark.background.setTint(if (isWatermarkOn) Color.parseColor("#FFC107") else Color.WHITE)
+        btnFocus.background.setTint(if (isFocusPeakingOn) Color.parseColor("#FFC107") else Color.WHITE)
+
+        // Listeners
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        ratio11.setOnClickListener   { currentRatio = "1:1";  styleGroup(ratio11, true, ratioGroup);  applyAspectRatio() }
+        ratio43.setOnClickListener   { currentRatio = "4:3";  styleGroup(ratio43, true, ratioGroup);  applyAspectRatio() }
+        ratio169.setOnClickListener  { currentRatio = "16:9"; styleGroup(ratio169, true, ratioGroup); applyAspectRatio() }
+        ratioFull.setOnClickListener { currentRatio = "FULL"; styleGroup(ratioFull, true, ratioGroup); applyAspectRatio() }
+
+        timerOff.setOnClickListener { currentTimer = 0; timerState = 0; styleGroup(timerOff, true, timerGroup); updateTimerUI() }
+        timer3.setOnClickListener   { currentTimer = 1; timerState = 1; styleGroup(timer3, true, timerGroup);   updateTimerUI() }
+        timer5.setOnClickListener   { currentTimer = 2; timerState = 2; styleGroup(timer5, true, timerGroup);   updateTimerUI() }
+        timer10.setOnClickListener  { currentTimer = 3; timerState = 3; styleGroup(timer10, true, timerGroup);  updateTimerUI() }
+
+        btnGrid.setOnClickListener {
+            currentGrid = (currentGrid + 1) % 4
+            btnGrid.background.setTint(if (currentGrid > 0) Color.parseColor("#FFC107") else Color.WHITE)
+            val names = listOf("Off", "3x3", "4x4", "Golden")
+            Toast.makeText(this, "Grid: ${names[currentGrid]}", Toast.LENGTH_SHORT).show()
+        }
+
+        btnLevel.setOnClickListener {
+            isLevelOn = !isLevelOn
+            btnLevel.background.setTint(if (isLevelOn) Color.parseColor("#FFC107") else Color.WHITE)
+            Toast.makeText(this, if (isLevelOn) "Level ON" else "Level OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        btnStabilizer.setOnClickListener {
+            isStabilizerOn = !isStabilizerOn
+            btnStabilizer.background.setTint(if (isStabilizerOn) Color.parseColor("#FFC107") else Color.WHITE)
+            Toast.makeText(this, if (isStabilizerOn) "Stabilisator ON" else "Stabilisator OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        btnMaster.setOnClickListener {
+            isMasterEffectOn = !isMasterEffectOn
+            btnMaster.background.setTint(if (isMasterEffectOn) Color.parseColor("#FFC107") else Color.WHITE)
+            Toast.makeText(this, if (isMasterEffectOn) "Master Efek ON" else "Master Efek OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        btnWatermark.setOnClickListener {
+            isWatermarkOn = !isWatermarkOn
+            btnWatermark.background.setTint(if (isWatermarkOn) Color.parseColor("#FFC107") else Color.WHITE)
+            Toast.makeText(this, if (isWatermarkOn) "Tanda Air ON" else "Tanda Air OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        btnFocus.setOnClickListener {
+            isFocusPeakingOn = !isFocusPeakingOn
+            btnFocus.background.setTint(if (isFocusPeakingOn) Color.parseColor("#FFC107") else Color.WHITE)
+            Toast.makeText(this, if (isFocusPeakingOn) "Focus Peaking ON" else "Focus Peaking OFF", Toast.LENGTH_SHORT).show()
+        }
+
+        dialog.show()
+    }
+
+    private fun applyAspectRatio() {
+        // Rebuild camera dengan aspect ratio baru
+        startCamera()
     }
 
     // ================== UI UPDATES ==================
@@ -314,6 +416,11 @@ class CameraActivity : AppCompatActivity() {
                 tvTimerText.alpha = 1.0f
             }
             2 -> {
+                btnTimer.setImageResource(R.drawable.ic_timer_on)
+                tvTimerText.text = "( 05 , 00 )"
+                tvTimerText.alpha = 1.0f
+            }
+            3 -> {
                 btnTimer.setImageResource(R.drawable.ic_timer_on)
                 tvTimerText.text = "( 10 , 00 )"
                 tvTimerText.alpha = 1.0f
@@ -401,9 +508,9 @@ class CameraActivity : AppCompatActivity() {
         cam.cameraControl.setZoomRatio(clamped)
     }
 
-    // ================== CAMERA START ==================
+    // ================== CAMERA ==================
     private fun startCamera() {
-        Log.d(TAG, "startCamera() dipanggil")
+        Log.d(TAG, "startCamera() dipanggil — ratio=$currentRatio")
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
@@ -414,9 +521,14 @@ class CameraActivity : AppCompatActivity() {
                     it.setSurfaceProvider(viewFinder.surfaceProvider)
                 }
 
+                val aspectRatio = when (currentRatio) {
+                    "16:9" -> AspectRatio.RATIO_16_9
+                    else -> AspectRatio.RATIO_4_3
+                }
+
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                    .setTargetAspectRatio(aspectRatio)
                     .build()
 
                 val selector = CameraSelector.Builder()
@@ -472,7 +584,6 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
-        // Animasi shutter
         shutterInner.animate().scaleX(0.85f).scaleY(0.85f).setDuration(80)
             .withEndAction {
                 shutterInner.animate().scaleX(1f).scaleY(1f).setDuration(80).start()
@@ -492,11 +603,8 @@ class CameraActivity : AppCompatActivity() {
 
                         val finalBitmap = if (isHdrEnabled &&
                             (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")
-                        ) {
-                            applyEnhancement(bitmap)
-                        } else {
-                            bitmap
-                        }
+                        ) applyEnhancement(bitmap) else bitmap
+
                         saveBitmapToGallery(finalBitmap)
                     } catch (e: Exception) {
                         Toast.makeText(baseContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -526,7 +634,7 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
-    // ================== SAVE TO GALLERY ==================
+    // ================== SAVE ==================
     private fun saveBitmapToGallery(bitmap: Bitmap) {
         val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
             .format(System.currentTimeMillis())
@@ -541,17 +649,13 @@ class CameraActivity : AppCompatActivity() {
         val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         uri?.let {
             val stream: OutputStream? = contentResolver.openOutputStream(it)
-            stream?.use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            }
+            stream?.use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
             Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
-
-            // Refresh thumbnail galeri
             cameraExecutor.execute { loadLastPhotoThumbnail() }
         }
     }
 
-    // ================== LOAD THUMBNAIL GALERI ==================
+    // ================== THUMBNAIL ==================
     private fun loadLastPhotoThumbnail() {
         try {
             val projection = arrayOf(
@@ -564,10 +668,7 @@ class CameraActivity : AppCompatActivity() {
 
             val cursor = contentResolver.query(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
-                sortOrder
+                projection, selection, selectionArgs, sortOrder
             )
 
             cursor?.use {
@@ -590,8 +691,7 @@ class CameraActivity : AppCompatActivity() {
 
                     runOnUiThread {
                         try {
-                            val drawable = BitmapDrawable(resources, bitmap)
-                            btnGalleryPreview.setImageDrawable(drawable)
+                            btnGalleryPreview.setImageDrawable(BitmapDrawable(resources, bitmap))
                             btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
                             btnGalleryPreview.background = null
                             btnGalleryPreview.clipToOutline = true
