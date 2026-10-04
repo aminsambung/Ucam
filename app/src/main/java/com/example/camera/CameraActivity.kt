@@ -155,7 +155,7 @@ class CameraActivity : AppCompatActivity() {
                 0f, 0f, 0f, 1f, 0f      // Alpha
             )
         )
-        colorMatrix.postConc(scaleMatrix)
+        colorMatrix.postConcat(scaleMatrix)
 
         paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
         canvas.drawBitmap(src, 0f, 0f, paint)
