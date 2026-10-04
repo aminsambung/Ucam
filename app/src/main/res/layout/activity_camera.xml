@@ -86,8 +86,3 @@
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-
-
-app/src/main/res/layout/activity_camera.xml
