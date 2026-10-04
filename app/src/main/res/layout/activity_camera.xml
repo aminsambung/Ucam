@@ -15,7 +15,53 @@
         app:layout_constraintBottom_toTopOf="@id/bottomProControls" />
 
     <!-- Baris Kontrol Atas (RAW, Info, Switch Camera, Settings) -->
+       <!-- Baris Kontrol Atas (Ratio, RAW, Settings) -->
     <LinearLayout
+        android:id="@+id/topProControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end|center_vertical"
+        android:background="#99000000"
+        android:padding="12dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Tombol Pilihan Rasio Foto -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRatioToggle"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="8dp"
+            android:text="4:3"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            app:strokeColor="@android:color/white"
+            app:cornerRadius="18dp" />
+
+        <!-- Tombol Toggle RAW -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRawToggle"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="8dp"
+            android:text="RAW"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            app:strokeColor="@android:color/white"
+            app:cornerRadius="18dp" />
+
+        <!-- Tombol Pengaturan -->
+        <ImageButton
+            android:id="@+id/btnOpenSettings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_preferences"
+            app:tint="@android:color/white" />
+    </LinearLayout>
+ <LinearLayout
         android:id="@+id/topProControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
