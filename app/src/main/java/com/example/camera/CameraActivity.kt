@@ -30,6 +30,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var viewFinder: PreviewView
     private lateinit var btnCapturePro: Button
     private lateinit var btnOpenSettings: ImageButton
+    private lateinit var btnSwitchCamera: ImageButton
     private lateinit var btnRawToggle: Button
     private lateinit var btnRatioToggle: Button
 
@@ -39,6 +40,9 @@ class CameraActivity : AppCompatActivity() {
 
     private var currentRatioIndex = 0
     private val ratios = arrayOf("4:3", "16:9")
+
+    // State untuk melacak lensa kamera (Default: Belakang)
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -52,6 +56,7 @@ class CameraActivity : AppCompatActivity() {
         viewFinder = findViewById(R.id.viewFinder)
         btnCapturePro = findViewById(R.id.btnCapturePro)
         btnOpenSettings = findViewById(R.id.btnOpenSettings)
+        btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
         btnRawToggle = findViewById(R.id.btnRawToggle)
         btnRatioToggle = findViewById(R.id.btnRatioToggle)
 
@@ -64,6 +69,16 @@ class CameraActivity : AppCompatActivity() {
         btnOpenSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
+        }
+
+        // Logika Tombol Switch Kamera
+        btnSwitchCamera.setOnClickListener {
+            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
+            }
+            startProCamera()
         }
 
         btnRawToggle.setOnClickListener {
@@ -82,12 +97,9 @@ class CameraActivity : AppCompatActivity() {
             val selectedRatio = ratios[currentRatioIndex]
             btnRatioToggle.text = selectedRatio
             Toast.makeText(this, "Rasio diubah ke $selectedRatio", Toast.LENGTH_SHORT).show()
-            
-            // Muat ulang konfigurasi kamera dengan rasio baru
             startProCamera()
         }
 
-        // Tombol Jepret dengan Pemrosesan Peningkatan Kualitas Otomatis
         btnCapturePro.setOnClickListener {
             takeEnhancedPhoto()
         }
@@ -97,34 +109,35 @@ class CameraActivity : AppCompatActivity() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(viewFinder.surfaceProvider)
-            }
-
-            // Menyesuaikan target rasio berdasarkan pilihan tombol UI
-            val aspectRatio = if (ratios[currentRatioIndex] == "16:9") {
-                AspectRatio.RATIO_16_9
-            } else {
-                AspectRatio.RATIO_4_3
-            }
-
-            // Menggunakan setCaptureMode dengan kualitas maksimal serta aspek rasio
-            imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .setTargetAspectRatio(aspectRatio)
-                .build()
-
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
             try {
+                val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(viewFinder.surfaceProvider)
+                }
+
+                val aspectRatio = if (ratios[currentRatioIndex] == "16:9") {
+                    AspectRatio.RATIO_16_9
+                } else {
+                    AspectRatio.RATIO_4_3
+                }
+
+                imageCapture = ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+                    .setTargetAspectRatio(aspectRatio)
+                    .build()
+
+                // Menggunakan selector berdasarkan variabel lensFacing aktif
+                val cameraSelector = CameraSelector.Builder()
+                    .requireLensFacing(lensFacing)
+                    .build()
+
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview, imageCapture
                 )
             } catch (exc: Exception) {
-                Toast.makeText(this, "Gagal memuat kamera: ${exc.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Gagal menginisialisasi kamera: ${exc.message}", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -140,21 +153,20 @@ class CameraActivity : AppCompatActivity() {
                 }
 
                 override fun onCaptureSuccess(image: ImageProxy) {
-                    // Mengubah ImageProxy menjadi Bitmap agar bisa diproses secara komputasi
-                    val bitmap = image.toBitmap()
-                    image.close()
+                    try {
+                        val bitmap = image.toBitmap()
+                        image.close()
 
-                    // Menerapkan Algoritma Peningkatan Gambar (Enhancement / Auto HDR-like Contrast & Saturation)
-                    val enhancedBitmap = applyComputationalEnhancement(bitmap)
-
-                    // Simpan hasil bitmap yang sudah ditingkatkan ke Galeri MediaStore
-                    saveBitmapToGallery(enhancedBitmap)
+                        val enhancedBitmap = applyComputationalEnhancement(bitmap)
+                        saveBitmapToGallery(enhancedBitmap)
+                    } catch (e: Exception) {
+                        Toast.makeText(baseContext, "Kesalahan pemrosesan gambar: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         )
     }
 
-    // Fungsi Simulasi Computational Photography (Menaikkan kontras, ketajaman, dan saturasi warna)
     private fun applyComputationalEnhancement(src: Bitmap): Bitmap {
         val width = src.width
         val height = src.height
@@ -163,18 +175,16 @@ class CameraActivity : AppCompatActivity() {
         val canvas = Canvas(dest)
         val paint = Paint()
 
-        // ColorMatrix untuk meningkatkan saturasi warna
         val colorMatrix = ColorMatrix().apply {
             setSaturation(1.15f)
         }
 
-        // Matriks skala untuk menaikkan sedikit kecerahan/kontras
         val scaleMatrix = ColorMatrix(
             floatArrayOf(
-                1.1f, 0f, 0f, 0f, 10f,  // Merah
-                0f, 1.1f, 0f, 0f, 10f,  // Hijau
-                0f, 0f, 1.1f, 0f, 10f,  // Biru
-                0f, 0f, 0f, 1f, 0f      // Alpha
+                1.1f, 0f, 0f, 0f, 10f,
+                0f, 1.1f, 0f, 0f, 10f,
+                0f, 0f, 1.1f, 0f, 10f,
+                0f, 0f, 0f, 1f, 0f
             )
         )
         colorMatrix.postConcat(scaleMatrix)
@@ -216,7 +226,7 @@ class CameraActivity : AppCompatActivity() {
             if (allPermissionsGranted()) {
                 startProCamera()
             } else {
-                Toast.makeText(this, "Izin kamera ditolak.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Izin kamera wajib diaktifkan.", Toast.LENGTH_LONG).show()
                 finish()
             }
         }
