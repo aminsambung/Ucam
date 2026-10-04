@@ -12,8 +12,10 @@ import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -31,14 +33,24 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var viewFinder: PreviewView
     private lateinit var btnCapturePro: Button
     private lateinit var btnOpenSettings: ImageButton
+    private lateinit var btnVideoSettings: ImageButton
     private lateinit var btnSwitchCamera: ImageButton
+    
+    // Panel Kontrol Atas
+    private lateinit var topPhotoControls: LinearLayout
+    private lateinit var topVideoControls: LinearLayout
+
     private lateinit var btnRawToggle: Button
     private lateinit var btnRatioToggle: Button
-    
-    // Tombol Fungsional Baru
     private lateinit var btnFlashToggle: Button
     private lateinit var btnHdrToggle: Button
     private lateinit var btnMacroToggle: Button
+
+    // Tombol Khusus Video (5 Item)
+    private lateinit var btnVideoFlash: Button
+    private lateinit var btnVideoHdr: Button
+    private lateinit var btnVideoStabilization: Button
+    private lateinit var btnVideoResolution: Button
 
     // Indikator Mode TextView
     private lateinit var modePortrait: TextView
@@ -56,10 +68,13 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var currentMode = "PRO"
 
-    // State untuk fitur baru
+    // State
     private var flashState = 0 // 0: OFF, 1: ON, 2: AUTO
     private var isHdrEnabled = true
     private var isMacroEnabled = false
+    private var isStabilizationEnabled = true
+    private var videoResIndex = 0
+    private val videoResolutions = arrayOf("720p 30", "1080p 30", "1080p 60", "4K 30")
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
@@ -76,16 +91,24 @@ class CameraActivity : AppCompatActivity() {
         viewFinder = findViewById(R.id.viewFinder)
         btnCapturePro = findViewById(R.id.btnCapturePro)
         btnOpenSettings = findViewById(R.id.btnOpenSettings)
+        btnVideoSettings = findViewById(R.id.btnVideoSettings)
         btnSwitchCamera = findViewById(R.id.btnSwitchCamera)
+
+        topPhotoControls = findViewById(R.id.topPhotoControls)
+        topVideoControls = findViewById(R.id.topVideoControls)
+
         btnRawToggle = findViewById(R.id.btnRawToggle)
         btnRatioToggle = findViewById(R.id.btnRatioToggle)
-
-        // Inisialisasi Tombol Baru
         btnFlashToggle = findViewById(R.id.btnFlashToggle)
         btnHdrToggle = findViewById(R.id.btnHdrToggle)
         btnMacroToggle = findViewById(R.id.btnMacroToggle)
 
-        // Inisialisasi TextView Mode
+        // Inisialisasi 5 Item Kontrol Video
+        btnVideoFlash = findViewById(R.id.btnVideoFlash)
+        btnVideoHdr = findViewById(R.id.btnVideoHdr)
+        btnVideoStabilization = findViewById(R.id.btnVideoStabilization)
+        btnVideoResolution = findViewById(R.id.btnVideoResolution)
+
         modePortrait = findViewById(R.id.modePortrait)
         modeCamera = findViewById(R.id.modeCamera)
         modeVideo = findViewById(R.id.modeVideo)
@@ -97,10 +120,11 @@ class CameraActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
 
-        btnOpenSettings.setOnClickListener {
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+        val openSettingsAction = View.OnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
+        btnOpenSettings.setOnClickListener(openSettingsAction)
+        btnVideoSettings.setOnClickListener(openSettingsAction)
 
         btnSwitchCamera.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
@@ -111,72 +135,56 @@ class CameraActivity : AppCompatActivity() {
             startProCamera()
         }
 
-        // --- Logika Tombol Flash Fungsional ---
+        // --- Logika Tombol Foto ---
         btnFlashToggle.setOnClickListener {
             flashState = (flashState + 1) % 3
-            when (flashState) {
-                0 -> {
-                    btnFlashToggle.text = "⚡ OFF"
-                    imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
-                    Toast.makeText(this, "Flash Dimatikan", Toast.LENGTH_SHORT).show()
-                }
-                1 -> {
-                    btnFlashToggle.text = "⚡ ON"
-                    imageCapture?.flashMode = ImageCapture.FLASH_MODE_ON
-                    Toast.makeText(this, "Flash Dinyalakan", Toast.LENGTH_SHORT).show()
-                }
-                2 -> {
-                    btnFlashToggle.text = "⚡ AUTO"
-                    imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
-                    Toast.makeText(this, "Flash Otomatis (Auto)", Toast.LENGTH_SHORT).show()
-                }
-            }
+            updateFlashUI(btnFlashToggle)
+        }
+        btnVideoFlash.setOnClickListener {
+            flashState = (flashState + 1) % 3
+            updateFlashUI(btnVideoFlash)
         }
 
-        // --- Logika Tombol HDR Fungsional ---
-        btnHdrToggle.setOnClickListener {
+        fun toggleHdr(btn: Button) {
             isHdrEnabled = !isHdrEnabled
-            if (isHdrEnabled) {
-                btnHdrToggle.text = "HDR: ON"
-                Toast.makeText(this, "HDR Computational Diaktifkan", Toast.LENGTH_SHORT).show()
-            } else {
-                btnHdrToggle.text = "HDR: OFF"
-                Toast.makeText(this, "HDR Dimatikan", Toast.LENGTH_SHORT).show()
-            }
+            btn.text = if (isHdrEnabled) "HDR: ON" else "HDR: OFF"
+            Toast.makeText(this, "HDR: $isHdrEnabled", Toast.LENGTH_SHORT).show()
+        }
+        btnHdrToggle.setOnClickListener { toggleHdr(btnHdrToggle) }
+        btnVideoHdr.setOnClickListener { toggleHdr(btnVideoHdr) }
+
+        // --- Logika Tombol Khusus Video ---
+        btnVideoStabilization.setOnClickListener {
+            isStabilizationEnabled = !isStabilizationEnabled
+            btnVideoStabilization.text = if (isStabilizationEnabled) "STAB: ON" else "STAB: OFF"
+            Toast.makeText(this, "Stabilisasi Video: $isStabilizationEnabled", Toast.LENGTH_SHORT).show()
         }
 
-        // --- Logika Tombol Macro Fungsional ---
+        btnVideoResolution.setOnClickListener {
+            videoResIndex = (videoResIndex + 1) % videoResolutions.size
+            val selectedRes = videoResolutions[videoResIndex]
+            btnVideoResolution.text = selectedRes
+            Toast.makeText(this, "Resolusi Video diatur ke $selectedRes", Toast.LENGTH_SHORT).show()
+        }
+
         btnMacroToggle.setOnClickListener {
             isMacroEnabled = !isMacroEnabled
-            if (isMacroEnabled) {
-                btnMacroToggle.text = "MACRO: ON"
-                Toast.makeText(this, "Mode Makro Aktif (Fokus Jarak Dekat)", Toast.LENGTH_SHORT).show()
-            } else {
-                btnMacroToggle.text = "MACRO"
-                Toast.makeText(this, "Mode Makro Nonaktif", Toast.LENGTH_SHORT).show()
-            }
+            btnMacroToggle.text = if (isMacroEnabled) "MACRO: ON" else "MACRO"
             startProCamera()
         }
 
         btnRawToggle.setOnClickListener {
             isRawEnabled = !isRawEnabled
-            if (isRawEnabled) {
-                btnRawToggle.text = "RAW: ON"
-                Toast.makeText(this, "Format RAW diaktifkan", Toast.LENGTH_SHORT).show()
-            } else {
-                btnRawToggle.text = "RAW"
-                Toast.makeText(this, "Format RAW dimatikan", Toast.LENGTH_SHORT).show()
-            }
+            btnRawToggle.text = if (isRawEnabled) "RAW: ON" else "RAW"
         }
 
         btnRatioToggle.setOnClickListener {
             currentRatioIndex = (currentRatioIndex + 1) % ratios.size
-            val selectedRatio = ratios[currentRatioIndex]
-            btnRatioToggle.text = selectedRatio
-            Toast.makeText(this, "Rasio diubah ke $selectedRatio", Toast.LENGTH_SHORT).show()
+            btnRatioToggle.text = ratios[currentRatioIndex]
             startProCamera()
         }
 
+        // Navigasi Mode
         modeCamera.setOnClickListener { switchMode("CAMERA") }
         modePro.setOnClickListener { switchMode("PRO") }
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
@@ -184,10 +192,28 @@ class CameraActivity : AppCompatActivity() {
 
         btnCapturePro.setOnClickListener {
             when (currentMode) {
-                "VIDEO" -> Toast.makeText(this, "Mode Video: Perekaman belum dimulai", Toast.LENGTH_SHORT).show()
+                "VIDEO" -> Toast.makeText(this, "Simulasi Perekaman Video Dimulai...", Toast.LENGTH_SHORT).show()
                 else -> takeEnhancedPhoto()
             }
         }
+    }
+
+    private fun updateFlashUI(button: Button) {
+        when (flashState) {
+            0 -> {
+                button.text = "⚡ OFF"
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
+            }
+            1 -> {
+                button.text = "⚡ ON"
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_ON
+            }
+            2 -> {
+                button.text = "⚡ AUTO"
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
+            }
+        }
+        Toast.makeText(this, "Flash Mode Updated", Toast.LENGTH_SHORT).show()
     }
 
     private fun switchMode(newMode: String) {
@@ -200,25 +226,23 @@ class CameraActivity : AppCompatActivity() {
         modePortrait.setTextColor(inactiveColor)
         modeVideo.setTextColor(inactiveColor)
 
-        when (newMode) {
-            "CAMERA" -> {
-                modeCamera.setTextColor(activeColor)
-                btnCapturePro.text = "SNAP"
+        // Atur Tampilan Baris Atas Berdasarkan Mode
+        if (newMode == "VIDEO") {
+            topPhotoControls.visibility = View.GONE
+            topVideoControls.visibility = View.VISIBLE
+            modeVideo.setTextColor(activeColor)
+            btnCapturePro.text = "REC"
+            Toast.makeText(this, "Mode Video Aktif", Toast.LENGTH_SHORT).show()
+        } else {
+            topPhotoControls.visibility = View.VISIBLE
+            topVideoControls.visibility = View.GONE
+            when (newMode) {
+                "CAMERA" -> { modeCamera.setTextColor(activeColor); btnCapturePro.text = "SNAP" }
+                "PRO" -> { modePro.setTextColor(activeColor); btnCapturePro.text = "PRO" }
+                "PORTRAIT" -> { modePortrait.setTextColor(activeColor); btnCapturePro.text = "PORT" }
             }
-            "PRO" -> {
-                modePro.setTextColor(activeColor)
-                btnCapturePro.text = "PRO"
-            }
-            "PORTRAIT" -> {
-                modePortrait.setTextColor(activeColor)
-                btnCapturePro.text = "PORT"
-            }
-            "VIDEO" -> {
-                modeVideo.setTextColor(activeColor)
-                btnCapturePro.text = "REC"
-            }
+            Toast.makeText(this, "Mode $newMode Aktif", Toast.LENGTH_SHORT).show()
         }
-        Toast.makeText(this, "Mode: $currentMode", Toast.LENGTH_SHORT).show()
     }
 
     private fun startProCamera() {
@@ -241,13 +265,6 @@ class CameraActivity : AppCompatActivity() {
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                     .setTargetAspectRatio(aspectRatio)
-                    .setFlashMode(
-                        when (flashState) {
-                            1 -> ImageCapture.FLASH_MODE_ON
-                            2 -> ImageCapture.FLASH_MODE_AUTO
-                            else -> ImageCapture.FLASH_MODE_OFF
-                        }
-                    )
                     .build()
 
                 val cameraSelector = CameraSelector.Builder()
@@ -259,15 +276,14 @@ class CameraActivity : AppCompatActivity() {
                     this, cameraSelector, preview, imageCapture
                 )
 
-                // Jika mode Macro aktif, terapkan kontrol zoom minimal/fokus jarak dekat jika didukung
                 if (isMacroEnabled) {
-                    camera.cameraControl.setZoomRatio(1.5f) // Simulasi makro zoom optik/digital ringan
+                    camera.cameraControl.setZoomRatio(1.5f)
                 } else {
                     camera.cameraControl.setZoomRatio(1.0f)
                 }
 
             } catch (exc: Exception) {
-                Toast.makeText(this, "Gagal menginisialisasi kamera: ${exc.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Gagal memuat kamera: ${exc.message}", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -287,7 +303,6 @@ class CameraActivity : AppCompatActivity() {
                         val bitmap = image.toBitmap()
                         image.close()
 
-                        // Terapkan peningkatan komputasi HDR / Pro / Portrait jika diaktifkan
                         val finalBitmap = if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT")) {
                             applyComputationalEnhancement(bitmap, currentMode)
                         } else {
@@ -312,11 +327,7 @@ class CameraActivity : AppCompatActivity() {
         val paint = Paint()
 
         val colorMatrix = ColorMatrix().apply {
-            if (mode == "PORTRAIT") {
-                setSaturation(1.25f)
-            } else {
-                setSaturation(1.15f) // Efek HDR-like kontras kaya
-            }
+            if (mode == "PORTRAIT") setSaturation(1.25f) else setSaturation(1.15f)
         }
 
         val scaleMatrix = ColorMatrix(
@@ -366,7 +377,7 @@ class CameraActivity : AppCompatActivity() {
             if (allPermissionsGranted()) {
                 startProCamera()
             } else {
-                Toast.makeText(this, "Izin kamera wajib diaktifkan.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Izin wajib diaktifkan.", Toast.LENGTH_LONG).show()
                 finish()
             }
         }
