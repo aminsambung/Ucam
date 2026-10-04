@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -34,6 +35,12 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var btnRawToggle: Button
     private lateinit var btnRatioToggle: Button
 
+    // Indikator Mode TextView
+    private lateinit var modePortrait: TextView
+    private lateinit var modeCamera: TextView
+    private lateinit var modeVideo: TextView
+    private lateinit var modePro: TextView
+
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
     private var isRawEnabled = false
@@ -41,12 +48,17 @@ class CameraActivity : AppCompatActivity() {
     private var currentRatioIndex = 0
     private val ratios = arrayOf("4:3", "16:9")
 
-    // State untuk melacak lensa kamera (Default: Belakang)
     private var lensFacing = CameraSelector.LENS_FACING_BACK
+    
+    // Status Mode Aktif ("CAMERA", "PRO", "PORTRAIT", "VIDEO")
+    private var currentMode = "PRO"
 
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
-        private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
+        private val REQUIRED_PERMISSIONS = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO // Dibutuhkan jika mode VIDEO aktif
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +72,12 @@ class CameraActivity : AppCompatActivity() {
         btnRawToggle = findViewById(R.id.btnRawToggle)
         btnRatioToggle = findViewById(R.id.btnRatioToggle)
 
+        // Inisialisasi TextView Mode
+        modePortrait = findViewById(R.id.modePortrait)
+        modeCamera = findViewById(R.id.modeCamera)
+        modeVideo = findViewById(R.id.modeVideo)
+        modePro = findViewById(R.id.modePro)
+
         if (allPermissionsGranted()) {
             startProCamera()
         } else {
@@ -71,7 +89,6 @@ class CameraActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // Logika Tombol Switch Kamera
         btnSwitchCamera.setOnClickListener {
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
                 CameraSelector.LENS_FACING_FRONT
@@ -100,8 +117,55 @@ class CameraActivity : AppCompatActivity() {
             startProCamera()
         }
 
+        // Listener Pemilihan Mode
+        modeCamera.setOnClickListener { switchMode("CAMERA") }
+        modePro.setOnClickListener { switchMode("PRO") }
+        modePortrait.setOnClickListener { switchMode("PORTRAIT") }
+        modeVideo.setOnClickListener { switchMode("VIDEO") }
+
+        // Tombol Jepret / Aksi Utama berdasarkan Mode Aktif
         btnCapturePro.setOnClickListener {
-            takeEnhancedPhoto()
+            when (currentMode) {
+                "VIDEO" -> Toast.makeText(this, "Mode Video: Perekaman video belum dimulai", Toast.LENGTH_SHORT).show()
+                else -> takeEnhancedPhoto()
+            }
+        }
+    }
+
+    private fun switchMode(newMode: String) {
+        currentMode = newMode
+        
+        // Reset warna teks mode ke transparan/redup
+        val inactiveColor = android.graphics.Color.parseColor("#99FFFFFF")
+        val activeColor = android.graphics.Color.WHITE
+
+        modeCamera.setTextColor(inactiveColor)
+        modePro.setTextColor(inactiveColor)
+        modePortrait.setTextColor(inactiveColor)
+        modeVideo.setTextColor(inactiveColor)
+
+        // Sorot mode yang sedang aktif & ubah teks tombol SNAP
+        when (newMode) {
+            "CAMERA" -> {
+                modeCamera.setTextColor(activeColor)
+                btnCapturePro.text = "SNAP"
+                Toast.makeText(this, "Beralih ke Mode Camera", Toast.LENGTH_SHORT).show()
+            }
+            "PRO" -> {
+                modePro.setTextColor(activeColor)
+                btnCapturePro.text = "PRO"
+                Toast.makeText(this, "Beralih ke Mode Pro (Computational Enhancement)", Toast.LENGTH_SHORT).show()
+            }
+            "PORTRAIT" -> {
+                modePortrait.setTextColor(activeColor)
+                btnCapturePro.text = "PORT"
+                Toast.makeText(this, "Beralih ke Mode Portrait", Toast.LENGTH_SHORT).show()
+            }
+            "VIDEO" -> {
+                modeVideo.setTextColor(activeColor)
+                btnCapturePro.text = "REC"
+                Toast.makeText(this, "Beralih ke Mode Video", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -127,7 +191,6 @@ class CameraActivity : AppCompatActivity() {
                     .setTargetAspectRatio(aspectRatio)
                     .build()
 
-                // Menggunakan selector berdasarkan variabel lensFacing aktif
                 val cameraSelector = CameraSelector.Builder()
                     .requireLensFacing(lensFacing)
                     .build()
@@ -157,8 +220,14 @@ class CameraActivity : AppCompatActivity() {
                         val bitmap = image.toBitmap()
                         image.close()
 
-                        val enhancedBitmap = applyComputationalEnhancement(bitmap)
-                        saveBitmapToGallery(enhancedBitmap)
+                        // Terapkan peningkatan komputasi hanya jika di Mode PRO atau PORTRAIT
+                        val finalBitmap = if (currentMode == "PRO" || currentMode == "PORTRAIT") {
+                            applyComputationalEnhancement(bitmap, currentMode)
+                        } else {
+                            bitmap // Mode CAMERA standar tanpa modifikasi warna berlebih
+                        }
+
+                        saveBitmapToGallery(finalBitmap)
                     } catch (e: Exception) {
                         Toast.makeText(baseContext, "Kesalahan pemrosesan gambar: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
@@ -167,7 +236,7 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    private fun applyComputationalEnhancement(src: Bitmap): Bitmap {
+    private fun applyComputationalEnhancement(src: Bitmap, mode: String): Bitmap {
         val width = src.width
         val height = src.height
         val dest = Bitmap.createBitmap(width, height, src.config ?: Bitmap.Config.ARGB_8888)
@@ -176,7 +245,13 @@ class CameraActivity : AppCompatActivity() {
         val paint = Paint()
 
         val colorMatrix = ColorMatrix().apply {
-            setSaturation(1.15f)
+            if (mode == "PORTRAIT") {
+                // Efek kontras & kehalusan kulit/warna khusus portrait
+                setSaturation(1.2f)
+            } else {
+                // Efek standar Pro (HDR-like)
+                setSaturation(1.15f)
+            }
         }
 
         val scaleMatrix = ColorMatrix(
@@ -198,10 +273,10 @@ class CameraActivity : AppCompatActivity() {
     private fun saveBitmapToGallery(bitmap: Bitmap) {
         val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis())
         val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "Enhanced_$name.jpg")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/ProCameraApp/Enhanced")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UcamApp")
             }
         }
 
@@ -211,7 +286,7 @@ class CameraActivity : AppCompatActivity() {
             outputStream?.let { stream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 95, stream)
                 stream.close()
-                Toast.makeText(this, "Foto berhasil ditingkatkan & disimpan!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Foto ($currentMode) berhasil disimpan!", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -226,7 +301,7 @@ class CameraActivity : AppCompatActivity() {
             if (allPermissionsGranted()) {
                 startProCamera()
             } else {
-                Toast.makeText(this, "Izin kamera wajib diaktifkan.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Izin kamera dan audio wajib diaktifkan.", Toast.LENGTH_LONG).show()
                 finish()
             }
         }
