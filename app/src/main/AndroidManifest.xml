@@ -7,8 +7,6 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-feature android:name="android.hardware.camera.any" />
 
-    <!-- Deklarasi bahwa aplikasi memerlukan fitur kamera -->
-    <uses-feature android:name="android.hardware.camera.any" />
 
     <application
         android:allowBackup="true"
