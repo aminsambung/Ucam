@@ -362,7 +362,6 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // ============ TOMBOL 🗝️ = CYCLE PRESET ============
         btnFilter.setOnClickListener {
             val presets = PresetLibrary.presets
             val idx = presets.indexOfFirst { it.id == currentPreset.id }
@@ -392,7 +391,7 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // ============ TAP TO FOCUS (FIX POSISI RING) ============
+        // ============ TAP TO FOCUS ============
         viewFinder.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val factory = viewFinder.meteringPointFactory
@@ -408,12 +407,11 @@ class CameraActivity : AppCompatActivity() {
                         Log.d(TAG, "Focus & metering selesai")
                     }, ContextCompat.getMainExecutor(this))
 
-                // ✅ Panggil showFocusRing dengan koordinat tap
                 showFocusRing(event.x, event.y)
 
                 if (isFocusPeakingOn) {
-                    focusPeakingRing.x = event.x - focusPeakingRing.width / 2f
-                    focusPeakingRing.y = event.y - focusPeakingRing.height / 2f
+                    focusPeakingRing.translationX = event.x - focusPeakingRing.width / 2f
+                    focusPeakingRing.translationY = event.y - focusPeakingRing.height / 2f
                     focusPeakingRing.visibility = View.VISIBLE
                     focusPeakingRing.animate()
                         .alpha(1f).setDuration(150)
@@ -684,19 +682,19 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 13f
     }
 
-    // ================== FOCUS RING (FIX POSISI) ==================
+    // ================== FOCUS RING (FIX PAKAI TRANSLATION) ==================
     private fun showFocusRing(touchX: Float, touchY: Float) {
         Log.d("FOCUS_DEBUG", "showFocusRing: x=$touchX, y=$touchY, w=${focusRing.width}")
 
-        // Kalau belum di-layout (width=0), tunggu sebentar
+        // Kalau belum di-layout, tunggu
         if (focusRing.width == 0) {
             focusRing.post { showFocusRing(touchX, touchY) }
             return
         }
 
-        // ✅ Set posisi: titik tengah ring = titik tap
-        focusRing.x = touchX - focusRing.width / 2f
-        focusRing.y = touchY - focusRing.height / 2f
+        // ✅ PAKAI TRANSLATION (bekerja tanpa constraint)
+        focusRing.translationX = touchX - focusRing.width / 2f
+        focusRing.translationY = touchY - focusRing.height / 2f
 
         // Set visible + reset animasi
         focusRing.visibility = View.VISIBLE
@@ -704,7 +702,7 @@ class CameraActivity : AppCompatActivity() {
         focusRing.scaleX = 1.5f
         focusRing.scaleY = 1.5f
 
-        // Animasi zoom out + fade out
+        // Animasi zoom out + fade
         focusRing.animate()
             .scaleX(1f)
             .scaleY(1f)
@@ -713,14 +711,12 @@ class CameraActivity : AppCompatActivity() {
                 focusRing.animate()
                     .alpha(0f)
                     .setDuration(800)
-                    .withEndAction {
-                        focusRing.visibility = View.INVISIBLE
-                    }
+                    .withEndAction { focusRing.visibility = View.INVISIBLE }
                     .start()
             }
             .start()
 
-        Log.d("FOCUS_DEBUG", "Ring muncul di x=${focusRing.x}, y=${focusRing.y}")
+        Log.d("FOCUS_DEBUG", "Ring muncul di tx=${focusRing.translationX}, ty=${focusRing.translationY}")
     }
 
     // ================== MODE ==================
