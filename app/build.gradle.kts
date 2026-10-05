@@ -41,21 +41,16 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
-    // --- DEPENDENSI CAMERAX ---
+    // ===== CameraX =====
     val cameraxVersion = "1.3.1"
-    
-    // Core CameraX & Camera2 interoperability
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    
-    // Lifecycle CameraX untuk Activity/Fragment
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    
-    // View untuk PreviewView di Layout XML
     implementation("androidx.camera:camera-view:$cameraxVersion")
-    
-    // Modul VideoCapture untuk fitur Rekam Video
     implementation("androidx.camera:camera-video:$cameraxVersion")
+
+    // ===== EXIF Metadata =====
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
