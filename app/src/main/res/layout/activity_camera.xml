@@ -289,7 +289,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/star_on"
+                android:src="@drawable/ic_key"
                 app:tint="@android:color/white"
                 app:layout_constraintBottom_toTopOf="@id/btnGalleryPreview"
                 app:layout_constraintStart_toStartOf="parent"
