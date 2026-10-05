@@ -46,8 +46,10 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import java.io.OutputStream
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -62,7 +64,6 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var topBar: View
     private lateinit var bottomSection: View
 
-    // Overlay visual
     private lateinit var gridOverlay: View
     private lateinit var levelLine: View
     private lateinit var focusPeakingRing: View
@@ -106,20 +107,19 @@ class CameraActivity : AppCompatActivity() {
     private var timerState = 0
     private val timerSeconds = intArrayOf(0, 3, 5, 10)
 
-    // Panel settings state
     private var currentRatio = "FULL"
     private var currentTimer = 0
-    private var currentGrid = 0          // 0=off, 1=3x3, 2=4x4, 3=golden
+    private var currentGrid = 0
     private var isLevelOn = false
     private var isStabilizerOn = true
     private var isMasterEffectOn = false
     private var isWatermarkOn = false
     private var isFocusPeakingOn = false
 
-    // Master efek profile
-    private var currentEffectProfile = "NONE"   // NONE, IPHONE, SONY, FUJI, LEICA, BW, VINTAGE
+    private var currentEffectProfile = "NONE"
 
-    // Sensor untuk level indicator
+    private val FULL_SCREEN_RATIO = 9f / 19.9f
+
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var gravity = FloatArray(3)
@@ -269,7 +269,6 @@ class CameraActivity : AppCompatActivity() {
         }
 
         btnFilter.setOnClickListener {
-            // Cycle melalui efek
             val effects = listOf("NONE", "IPHONE", "SONY", "FUJI", "LEICA", "BW", "VINTAGE")
             val idx = effects.indexOf(currentEffectProfile)
             currentEffectProfile = effects[(idx + 1) % effects.size]
@@ -292,7 +291,6 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // ============ TAP TO FOCUS (AF + AE) ============
         viewFinder.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val factory = viewFinder.meteringPointFactory
@@ -310,14 +308,12 @@ class CameraActivity : AppCompatActivity() {
 
                 showFocusRing(event.x, event.y)
 
-                // Focus peaking di posisi tap
                 if (isFocusPeakingOn) {
                     focusPeakingRing.x = event.x - focusPeakingRing.width / 2f
                     focusPeakingRing.y = event.y - focusPeakingRing.height / 2f
                     focusPeakingRing.visibility = View.VISIBLE
                     focusPeakingRing.animate()
-                        .alpha(1f)
-                        .setDuration(150)
+                        .alpha(1f).setDuration(150)
                         .withEndAction {
                             focusPeakingRing.animate().alpha(0f).setDuration(400)
                                 .withEndAction { focusPeakingRing.visibility = View.GONE }
@@ -342,10 +338,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun registerLevelSensor() {
         if (!isLevelSensorRegistered && accelerometer != null) {
-            sensorManager.registerListener(
-                levelListener, accelerometer,
-                SensorManager.SENSOR_DELAY_UI
-            )
+            sensorManager.registerListener(levelListener, accelerometer, SensorManager.SENSOR_DELAY_UI)
             isLevelSensorRegistered = true
         }
     }
@@ -359,10 +352,8 @@ class CameraActivity : AppCompatActivity() {
 
     private fun updateLevelLine() {
         if (!isLevelOn) return
-        val roll = gravity[0]   // rotasi kiri/kanan
-        // Rotasi garis level
+        val roll = gravity[0]
         levelLine.rotation = -roll * 2f
-        // Warna: hijau kalau level (roll kecil), putih kalau tidak
         val tint = if (abs(roll) < 1.5f) "#00FF00" else "#FFFFFF"
         levelLine.setBackgroundColor(Color.parseColor(tint))
     }
@@ -408,7 +399,6 @@ class CameraActivity : AppCompatActivity() {
         val ratioGroup = listOf(ratio11, ratio43, ratio169, ratioFull)
         val timerGroup = listOf(timerOff, timer3, timer5, timer10)
 
-        // Set state awal
         when (currentRatio) {
             "1:1"  -> styleGroup(ratio11, true, ratioGroup)
             "4:3"  -> styleGroup(ratio43, true, ratioGroup)
@@ -428,7 +418,6 @@ class CameraActivity : AppCompatActivity() {
         btnWatermark.background.setTint(if (isWatermarkOn) Color.parseColor("#FFC107") else Color.WHITE)
         btnFocus.background.setTint(if (isFocusPeakingOn) Color.parseColor("#FFC107") else Color.WHITE)
 
-        // Listeners
         btnClose.setOnClickListener { dialog.dismiss() }
 
         ratio11.setOnClickListener {
@@ -745,22 +734,23 @@ class CameraActivity : AppCompatActivity() {
 
                 override fun onCaptureSuccess(image: ImageProxy) {
                     try {
-                        val bitmap = image.toBitmap()
+                        var bitmap = image.toBitmap()
                         image.close()
 
-                        // Apply efek master (kalau aktif)
+                        if (currentRatio == "FULL") {
+                            bitmap = cropToFullScreen(bitmap)
+                        }
+
                         var finalBitmap = if (isMasterEffectOn) {
                             applyEffectProfile(bitmap, currentEffectProfile)
                         } else bitmap
 
-                        // Apply HDR enhancement
                         if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
                             finalBitmap = applyEnhancement(finalBitmap)
                         }
 
-                        // Apply watermark
                         if (isWatermarkOn) {
-                            finalBitmap = applyWatermark(finalBitmap)
+                            finalBitmap = applyWatermarkToBitmap(finalBitmap)
                         }
 
                         saveBitmapToGallery(finalBitmap)
@@ -770,6 +760,21 @@ class CameraActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    // ================== CROP 9:19 ==================
+    private fun cropToFullScreen(src: Bitmap): Bitmap {
+        val srcRatio = src.width.toFloat() / src.height.toFloat()
+
+        return if (srcRatio > FULL_SCREEN_RATIO) {
+            val newWidth = (src.height * FULL_SCREEN_RATIO).toInt()
+            val xOffset = (src.width - newWidth) / 2
+            Bitmap.createBitmap(src, xOffset, 0, newWidth, src.height)
+        } else {
+            val newHeight = (src.width / FULL_SCREEN_RATIO).toInt()
+            val yOffset = (src.height - newHeight) / 2
+            Bitmap.createBitmap(src, 0, yOffset, src.width, newHeight)
+        }
     }
 
     // ================== EFEK / COLOR GRADING ==================
@@ -813,13 +818,11 @@ class CameraActivity : AppCompatActivity() {
             else -> ColorMatrix()
         }
 
-        // Boost saturation untuk efek tertentu
         if (profile == "IPHONE" || profile == "SONY") {
             val sat = ColorMatrix().apply { setSaturation(1.15f) }
             matrix.postConcat(sat)
         }
 
-        // Contrast boost
         if (profile != "NONE") {
             val contrast = when (profile) {
                 "SONY" -> 1.18f
@@ -863,7 +866,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     // ================== WATERMARK ==================
-    private fun applyWatermark(src: Bitmap): Bitmap {
+    private fun applyWatermarkToBitmap(src: Bitmap): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
         canvas.drawBitmap(src, 0f, 0f, null)
@@ -886,10 +889,10 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
-    // ================== SAVE ==================
+    // ================== SAVE + EXIF ==================
     private fun saveBitmapToGallery(bitmap: Bitmap) {
-        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
-            .format(System.currentTimeMillis())
+        val now = Date()
+        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(now)
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
             put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
@@ -901,7 +904,47 @@ class CameraActivity : AppCompatActivity() {
         val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         uri?.let {
             val stream: OutputStream? = contentResolver.openOutputStream(it)
-            stream?.use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+            stream?.use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+            }
+
+            try {
+                contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
+                    val exif = ExifInterface(pfd.fileDescriptor)
+
+                    exif.setAttribute(ExifInterface.TAG_MAKE, "Ucam")
+                    exif.setAttribute(ExifInterface.TAG_MODEL, "Ucam Camera App")
+                    exif.setAttribute(ExifInterface.TAG_SOFTWARE, "Ucam v1.0")
+
+                    val dateFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US)
+                    val dateTime = dateFormat.format(now)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTime)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME_DIGITIZED, dateTime)
+
+                    exif.setAttribute(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL.toString()
+                    )
+
+                    exif.setAttribute(ExifInterface.TAG_IMAGE_WIDTH, bitmap.width.toString())
+                    exif.setAttribute(ExifInterface.TAG_IMAGE_LENGTH, bitmap.height.toString())
+
+                    exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, "50/10")
+                    exif.setAttribute(ExifInterface.TAG_F_NUMBER, "18/10")
+                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, "1/60")
+                    exif.setAttribute(ExifInterface.TAG_ISO_SPEED, "400")
+                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_BIAS_VALUE, "0/6")
+                    exif.setAttribute(ExifInterface.TAG_FLASH, "0")
+                    exif.setAttribute(ExifInterface.TAG_WHITE_BALANCE, "0")
+
+                    exif.saveAttributes()
+                    Log.d(TAG, "EXIF metadata ditulis")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "EXIF write error", e)
+            }
+
             Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
             cameraExecutor.execute { loadLastPhotoThumbnail() }
         }
