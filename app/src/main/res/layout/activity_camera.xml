@@ -15,8 +15,10 @@
     <View
         android:id="@+id/touchOverlay"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-    
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true" />
+
     <View
         android:id="@+id/gridOverlay"
         android:layout_width="match_parent"
@@ -69,10 +71,12 @@
 
     <View
         android:id="@+id/focusRing"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:background="@drawable/bg_focus_ring"
-        android:visibility="invisible" />
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <LinearLayout
         android:id="@+id/topBar"
