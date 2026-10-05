@@ -391,9 +391,11 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // ============ TAP TO FOCUS ============
+        // ============ TAP TO FOCUS (DENGAN DEBUG TOAST) ============
         viewFinder.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
+                Log.d("FOCUS_DEBUG", "Tap detected: x=${event.x}, y=${event.y}")
+
                 val factory = viewFinder.meteringPointFactory
                 val point = factory.createPoint(event.x, event.y)
 
@@ -407,6 +409,7 @@ class CameraActivity : AppCompatActivity() {
                         Log.d(TAG, "Focus & metering selesai")
                     }, ContextCompat.getMainExecutor(this))
 
+                // ✅ Panggil showFocusRing
                 showFocusRing(event.x, event.y)
 
                 if (isFocusPeakingOn) {
@@ -682,19 +685,25 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 13f
     }
 
-    // ================== FOCUS RING (FIX PAKAI TRANSLATION) ==================
+    // ================== FOCUS RING (DENGAN DEBUG) ==================
     private fun showFocusRing(touchX: Float, touchY: Float) {
-        Log.d("FOCUS_DEBUG", "showFocusRing: x=$touchX, y=$touchY, w=${focusRing.width}")
+        Log.d("FOCUS_DEBUG", "showFocusRing CALLED: x=$touchX, y=$touchY, w=${focusRing.width}, h=${focusRing.height}")
 
         // Kalau belum di-layout, tunggu
         if (focusRing.width == 0) {
+            Log.d("FOCUS_DEBUG", "width=0, retry via post")
             focusRing.post { showFocusRing(touchX, touchY) }
             return
         }
 
         // ✅ PAKAI TRANSLATION (bekerja tanpa constraint)
-        focusRing.translationX = touchX - focusRing.width / 2f
-        focusRing.translationY = touchY - focusRing.height / 2f
+        val targetX = touchX - focusRing.width / 2f
+        val targetY = touchY - focusRing.height / 2f
+
+        focusRing.translationX = targetX
+        focusRing.translationY = targetY
+
+        Log.d("FOCUS_DEBUG", "Ring dipindah ke tx=$targetX, ty=$targetY")
 
         // Set visible + reset animasi
         focusRing.visibility = View.VISIBLE
@@ -715,8 +724,6 @@ class CameraActivity : AppCompatActivity() {
                     .start()
             }
             .start()
-
-        Log.d("FOCUS_DEBUG", "Ring muncul di tx=${focusRing.translationX}, ty=${focusRing.translationY}")
     }
 
     // ================== MODE ==================
@@ -775,7 +782,6 @@ class CameraActivity : AppCompatActivity() {
                     else   -> AspectRatio.RATIO_4_3
                 }
 
-                // ✅ PREVIEW dengan aspect ratio
                 val preview = Preview.Builder()
                     .setTargetAspectRatio(aspectRatio)
                     .build()
@@ -798,7 +804,6 @@ class CameraActivity : AppCompatActivity() {
                 setSafeZoom(zoomValues[zoomIndex])
                 applyFlashToCapture()
 
-                // ✅ Update scale type preview
                 updatePreviewScaleType()
 
                 Log.d(TAG, "Camera bind SUCCESS — ratio=$currentRatio")
