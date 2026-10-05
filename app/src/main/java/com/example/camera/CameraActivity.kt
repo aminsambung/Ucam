@@ -362,6 +362,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+        // ============ TOMBOL 🗝️ = CYCLE PRESET ============
         btnFilter.setOnClickListener {
             val presets = PresetLibrary.presets
             val idx = presets.indexOfFirst { it.id == currentPreset.id }
@@ -391,6 +392,7 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
+        // ============ TAP TO FOCUS (FIX POSISI RING) ============
         viewFinder.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val factory = viewFinder.meteringPointFactory
@@ -406,6 +408,7 @@ class CameraActivity : AppCompatActivity() {
                         Log.d(TAG, "Focus & metering selesai")
                     }, ContextCompat.getMainExecutor(this))
 
+                // ✅ Panggil showFocusRing dengan koordinat tap
                 showFocusRing(event.x, event.y)
 
                 if (isFocusPeakingOn) {
@@ -681,18 +684,43 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 13f
     }
 
-    private fun showFocusRing(x: Float, y: Float) {
-        focusRing.x = x - focusRing.width / 2f
-        focusRing.y = y - focusRing.height / 2f
+    // ================== FOCUS RING (FIX POSISI) ==================
+    private fun showFocusRing(touchX: Float, touchY: Float) {
+        Log.d("FOCUS_DEBUG", "showFocusRing: x=$touchX, y=$touchY, w=${focusRing.width}")
+
+        // Kalau belum di-layout (width=0), tunggu sebentar
+        if (focusRing.width == 0) {
+            focusRing.post { showFocusRing(touchX, touchY) }
+            return
+        }
+
+        // ✅ Set posisi: titik tengah ring = titik tap
+        focusRing.x = touchX - focusRing.width / 2f
+        focusRing.y = touchY - focusRing.height / 2f
+
+        // Set visible + reset animasi
         focusRing.visibility = View.VISIBLE
         focusRing.alpha = 1f
-        focusRing.scaleX = 1.3f
-        focusRing.scaleY = 1.3f
+        focusRing.scaleX = 1.5f
+        focusRing.scaleY = 1.5f
+
+        // Animasi zoom out + fade out
         focusRing.animate()
-            .scaleX(1f).scaleY(1f).alpha(0f)
-            .setDuration(1200)
-            .withEndAction { focusRing.visibility = View.INVISIBLE }
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(300)
+            .withEndAction {
+                focusRing.animate()
+                    .alpha(0f)
+                    .setDuration(800)
+                    .withEndAction {
+                        focusRing.visibility = View.INVISIBLE
+                    }
+                    .start()
+            }
             .start()
+
+        Log.d("FOCUS_DEBUG", "Ring muncul di x=${focusRing.x}, y=${focusRing.y}")
     }
 
     // ================== MODE ==================
@@ -746,13 +774,12 @@ class CameraActivity : AppCompatActivity() {
             try {
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-                // Tentukan aspect ratio
                 val aspectRatio = when (currentRatio) {
                     "16:9" -> AspectRatio.RATIO_16_9
                     else   -> AspectRatio.RATIO_4_3
                 }
 
-                // ✅ PREVIEW dengan aspect ratio (fix rasio)
+                // ✅ PREVIEW dengan aspect ratio
                 val preview = Preview.Builder()
                     .setTargetAspectRatio(aspectRatio)
                     .build()
@@ -760,7 +787,6 @@ class CameraActivity : AppCompatActivity() {
                         it.setSurfaceProvider(viewFinder.surfaceProvider)
                     }
 
-                // ✅ IMAGE CAPTURE dengan aspect ratio sama
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .setTargetAspectRatio(aspectRatio)
@@ -776,7 +802,7 @@ class CameraActivity : AppCompatActivity() {
                 setSafeZoom(zoomValues[zoomIndex])
                 applyFlashToCapture()
 
-                // ✅ Update scale type preview sesuai rasio
+                // ✅ Update scale type preview
                 updatePreviewScaleType()
 
                 Log.d(TAG, "Camera bind SUCCESS — ratio=$currentRatio")
@@ -787,11 +813,9 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    // ✅ FUNGSI BARU: Update preview scale type
     private fun updatePreviewScaleType() {
         when (currentRatio) {
             "1:1" -> {
-                // Preview jadi persegi
                 val size = viewFinder.width.coerceAtMost(viewFinder.height)
                 val params = viewFinder.layoutParams
                 params.width = size
@@ -800,7 +824,6 @@ class CameraActivity : AppCompatActivity() {
                 viewFinder.scaleType = PreviewView.ScaleType.FILL_CENTER
             }
             "4:3", "16:9" -> {
-                // Preview fit dengan bar hitam
                 val params = viewFinder.layoutParams
                 params.width = ViewGroup.LayoutParams.MATCH_PARENT
                 params.height = ViewGroup.LayoutParams.MATCH_PARENT
@@ -808,7 +831,6 @@ class CameraActivity : AppCompatActivity() {
                 viewFinder.scaleType = PreviewView.ScaleType.FIT_CENTER
             }
             "FULL" -> {
-                // Preview full screen (crop)
                 val params = viewFinder.layoutParams
                 params.width = ViewGroup.LayoutParams.MATCH_PARENT
                 params.height = ViewGroup.LayoutParams.MATCH_PARENT
@@ -867,20 +889,14 @@ class CameraActivity : AppCompatActivity() {
                         var bitmap = image.toBitmap()
                         image.close()
 
-                        // Crop 9:19 kalau mode FULL
-                        if (currentRatio == "FULL") {
-                            bitmap = cropToFullScreen(bitmap)
-                        }
+                        if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
 
-                        // Apply preset
                         var finalBitmap = if (isPresetEnabled) applyPreset(bitmap, currentPreset) else bitmap
 
-                        // Apply HDR enhancement
                         if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
                             finalBitmap = applyEnhancement(finalBitmap)
                         }
 
-                        // Apply watermark
                         if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
 
                         saveBitmapToGallery(finalBitmap)
@@ -892,7 +908,6 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
-    // ================== CROP 9:19 ==================
     private fun cropToFullScreen(src: Bitmap): Bitmap {
         val srcRatio = src.width.toFloat() / src.height.toFloat()
         return if (srcRatio > FULL_SCREEN_RATIO) {
@@ -999,7 +1014,6 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
-    // ================== HDR ENHANCEMENT ==================
     private fun applyEnhancement(src: Bitmap): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
@@ -1019,7 +1033,6 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
-    // ================== WATERMARK ==================
     private fun applyWatermarkToBitmap(src: Bitmap): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
@@ -1097,7 +1110,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== THUMBNAIL ==================
     private fun loadLastPhotoThumbnail() {
         try {
             val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATE_ADDED)
@@ -1147,7 +1159,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== PERMISSIONS ==================
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
