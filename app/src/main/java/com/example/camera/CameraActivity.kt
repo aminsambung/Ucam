@@ -77,146 +77,67 @@ data class CameraPreset(
 
 object PresetLibrary {
     val presets = listOf(
+        CameraPreset("natural", "Natural", "Warna asli"),
         CameraPreset(
-            id = "natural",
-            name = "Natural",
-            description = "Warna asli",
-            saturation = 1.0f,
-            contrast = 1.0f
+            "soft_pastel", "Soft Pastel", "Dreamy, cream tone",
+            saturation = 0.85f, contrast = 0.85f, brightness = 12f,
+            warmth = 8f, tint = 5f, shadowLift = 0.25f,
+            highlightRolloff = 0.15f, vibrance = 10f
         ),
         CameraPreset(
-            id = "soft_pastel",
-            name = "Soft Pastel",
-            description = "Dreamy, cream tone, aesthetic",
-            saturation = 0.85f,
-            contrast = 0.85f,
-            brightness = 12f,
-            warmth = 8f,
-            tint = 5f,
-            shadowLift = 0.25f,
-            highlightRolloff = 0.15f,
-            vibrance = 10f
+            "vivid", "Vivid", "Warna pop",
+            saturation = 1.35f, contrast = 1.15f, brightness = 5f, warmth = 5f
         ),
         CameraPreset(
-            id = "vivid",
-            name = "Vivid",
-            description = "Warna pop",
-            saturation = 1.35f,
-            contrast = 1.15f,
-            brightness = 5f,
-            warmth = 5f
+            "cinematic", "Cinematic", "Teal-orange Sony",
+            saturation = 1.15f, contrast = 1.25f, brightness = -5f,
+            warmth = 10f, tint = -10f, shadowLift = 0.15f, highlightRolloff = 0.2f
         ),
         CameraPreset(
-            id = "cinematic",
-            name = "Cinematic",
-            description = "Teal-orange Sony",
-            saturation = 1.15f,
-            contrast = 1.25f,
-            brightness = -5f,
-            warmth = 10f,
-            tint = -10f,
-            shadowLift = 0.15f,
-            highlightRolloff = 0.2f
+            "soft_iphone", "Soft iPhone", "Hangat, lembut",
+            saturation = 1.10f, contrast = 1.08f, brightness = 5f,
+            warmth = 8f, shadowLift = 0.1f
         ),
         CameraPreset(
-            id = "soft_iphone",
-            name = "Soft iPhone",
-            description = "Hangat, lembut",
-            saturation = 1.10f,
-            contrast = 1.08f,
-            brightness = 5f,
-            warmth = 8f,
-            shadowLift = 0.1f
-        ),
-        CameraPreset(
-            id = "fuji",
-            name = "Fuji Classic",
-            description = "Filmic hijau",
-            saturation = 0.95f,
-            contrast = 1.12f,
-            warmth = -5f,
-            tint = 5f,
+            "fuji", "Fuji Classic", "Filmic hijau",
+            saturation = 0.95f, contrast = 1.12f, warmth = -5f, tint = 5f,
             shadowLift = 0.2f
         ),
         CameraPreset(
-            id = "bw",
-            name = "B&W",
-            description = "Hitam putih",
-            saturation = 0f,
-            contrast = 1.3f,
-            isBlackAndWhite = true
+            "bw", "B&W", "Hitam putih",
+            saturation = 0f, contrast = 1.3f, isBlackAndWhite = true
         ),
         CameraPreset(
-            id = "vintage",
-            name = "Vintage",
-            description = "Sepia old",
-            saturation = 0.8f,
-            contrast = 1.1f,
-            warmth = 15f,
-            isVintage = true
+            "vintage", "Vintage", "Sepia old",
+            saturation = 0.8f, contrast = 1.1f, warmth = 15f, isVintage = true
         ),
         CameraPreset(
-            id = "sunset_glow",
-            name = "Sunset Glow",
-            description = "Hangat golden sunset",
-            saturation = 1.15f,
-            contrast = 1.05f,
-            brightness = 8f,
-            warmth = 20f,
-            tint = 5f,
-            shadowLift = 0.2f,
-            highlightRolloff = 0.15f,
-            vibrance = 12f
+            "sunset_glow", "Sunset Glow", "Golden sunset",
+            saturation = 1.15f, contrast = 1.05f, brightness = 8f,
+            warmth = 20f, tint = 5f, shadowLift = 0.2f,
+            highlightRolloff = 0.15f, vibrance = 12f
         ),
         CameraPreset(
-            id = "cool_ocean",
-            name = "Cool Ocean",
-            description = "Biru dingin",
-            saturation = 1.10f,
-            contrast = 1.10f,
-            brightness = 3f,
-            warmth = -15f,
-            tint = -8f,
-            shadowLift = 0.15f,
-            vibrance = 10f
+            "cool_ocean", "Cool Ocean", "Biru dingin",
+            saturation = 1.10f, contrast = 1.10f, brightness = 3f,
+            warmth = -15f, tint = -8f, shadowLift = 0.15f, vibrance = 10f
         ),
         CameraPreset(
-            id = "pink_dream",
-            name = "Pink Dream",
-            description = "Pink intens, dreamy",
-            saturation = 0.95f,
-            contrast = 0.90f,
-            brightness = 15f,
-            warmth = 5f,
-            tint = 18f,
-            shadowLift = 0.3f,
-            highlightRolloff = 0.2f,
-            vibrance = 15f
+            "pink_dream", "Pink Dream", "Pink intens",
+            saturation = 0.95f, contrast = 0.90f, brightness = 15f,
+            warmth = 5f, tint = 18f, shadowLift = 0.3f,
+            highlightRolloff = 0.2f, vibrance = 15f
         ),
         CameraPreset(
-            id = "sepia_gold",
-            name = "Sepia Gold",
-            description = "Old money, golden",
-            saturation = 0.75f,
-            contrast = 1.05f,
-            brightness = 5f,
-            warmth = 25f,
-            tint = 8f,
-            shadowLift = 0.25f,
-            isVintage = true
+            "sepia_gold", "Sepia Gold", "Old money golden",
+            saturation = 0.75f, contrast = 1.05f, brightness = 5f,
+            warmth = 25f, tint = 8f, shadowLift = 0.25f, isVintage = true
         ),
         CameraPreset(
-            id = "cyber_neon",
-            name = "Cyber Neon",
-            description = "Purple-blue neon",
-            saturation = 1.30f,
-            contrast = 1.20f,
-            brightness = -8f,
-            warmth = -10f,
-            tint = -15f,
-            shadowLift = 0.1f,
-            highlightRolloff = 0.25f,
-            vibrance = 20f
+            "cyber_neon", "Cyber Neon", "Purple-blue neon",
+            saturation = 1.30f, contrast = 1.20f, brightness = -8f,
+            warmth = -10f, tint = -15f, shadowLift = 0.1f,
+            highlightRolloff = 0.25f, vibrance = 20f
         )
     )
 
@@ -229,7 +150,6 @@ object PresetLibrary {
 // =====================================================
 class CameraActivity : AppCompatActivity() {
 
-    // ================== VIEWS ==================
     private lateinit var viewFinder: PreviewView
     private lateinit var focusRing: View
     private lateinit var topBar: View
@@ -263,7 +183,6 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var shutterInner: View
     private lateinit var btnSwitchCamera: ImageButton
 
-    // ================== STATE ==================
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
@@ -287,7 +206,6 @@ class CameraActivity : AppCompatActivity() {
     private var isWatermarkOn = false
     private var isFocusPeakingOn = false
 
-    // PRESET
     private var currentPreset: CameraPreset = PresetLibrary.getById("soft_pastel")
     private var isPresetEnabled = true
 
@@ -317,7 +235,6 @@ class CameraActivity : AppCompatActivity() {
         private const val TAG = "CameraActivity"
     }
 
-    // ================== LIFECYCLE ==================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
@@ -342,7 +259,7 @@ class CameraActivity : AppCompatActivity() {
 
         cameraExecutor.execute { loadLastPhotoThumbnail() }
 
-        Toast.makeText(this, "Preset aktif: ${currentPreset.name}", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Preset: ${currentPreset.name}", Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
@@ -364,35 +281,29 @@ class CameraActivity : AppCompatActivity() {
         unregisterLevelSensor()
     }
 
-    // ================== BIND VIEWS ==================
     private fun bindViews() {
         viewFinder         = findViewById(R.id.viewFinder)
         focusRing          = findViewById(R.id.focusRing)
         topBar             = findViewById(R.id.topBar)
         bottomSection      = findViewById(R.id.bottomSection)
-
         gridOverlay        = findViewById(R.id.gridOverlay)
         levelLine          = findViewById(R.id.levelLine)
         focusPeakingRing   = findViewById(R.id.focusPeakingRing)
         watermarkPreview   = findViewById(R.id.watermarkPreview)
-
         btnFlash           = findViewById(R.id.btnFlash)
         btnHdr             = findViewById(R.id.btnHdr)
         btnTimer           = findViewById(R.id.btnTimer)
         btnSettings        = findViewById(R.id.btnSettings)
         tvTimerText        = findViewById(R.id.tvTimerText)
-
         zoom06             = findViewById(R.id.zoom06)
         zoom1x             = findViewById(R.id.zoom1x)
         zoom2x             = findViewById(R.id.zoom2x)
-
         modeNight          = findViewById(R.id.modeNight)
         modePortrait       = findViewById(R.id.modePortrait)
         modePhoto          = findViewById(R.id.modePhoto)
         modeVideo          = findViewById(R.id.modeVideo)
         modeVlog           = findViewById(R.id.modeVlog)
         modePro            = findViewById(R.id.modePro)
-
         btnGalleryPreview  = findViewById(R.id.btnGalleryPreview)
         btnFilter          = findViewById(R.id.btnFilter)
         btnCapture         = findViewById(R.id.btnCapture)
@@ -400,7 +311,6 @@ class CameraActivity : AppCompatActivity() {
         btnSwitchCamera    = findViewById(R.id.btnSwitchCamera)
     }
 
-    // ================== LISTENERS ==================
     private fun setupListeners() {
         btnFlash.setOnClickListener {
             flashState = (flashState + 1) % 3
@@ -443,7 +353,6 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // ============ TOMBOL ⭐ = CYCLE PRESET ============
         btnFilter.setOnClickListener {
             val presets = PresetLibrary.presets
             val idx = presets.indexOfFirst { it.id == currentPreset.id }
@@ -509,7 +418,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== SENSOR LEVEL ==================
     private val levelListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             gravity = event.values.clone()
@@ -540,7 +448,6 @@ class CameraActivity : AppCompatActivity() {
         levelLine.setBackgroundColor(Color.parseColor(tint))
     }
 
-    // ================== SETTINGS OVERLAY ==================
     private fun showSettingsOverlay() {
         val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -667,10 +574,7 @@ class CameraActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // ================== APPLY VISUAL ==================
-    private fun applyAspectRatio() {
-        startCamera()
-    }
+    private fun applyAspectRatio() { startCamera() }
 
     private fun applyGrid() {
         when (currentGrid) {
@@ -696,25 +600,16 @@ class CameraActivity : AppCompatActivity() {
         if (isLevelOn) {
             levelLine.visibility = View.VISIBLE
             registerLevelSensor()
-            Toast.makeText(this, "Level ON", Toast.LENGTH_SHORT).show()
         } else {
             levelLine.visibility = View.GONE
             unregisterLevelSensor()
-            Toast.makeText(this, "Level OFF", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun applyWatermark() {
-        if (isWatermarkOn) {
-            watermarkPreview.visibility = View.VISIBLE
-            Toast.makeText(this, "Tanda Air ON", Toast.LENGTH_SHORT).show()
-        } else {
-            watermarkPreview.visibility = View.GONE
-            Toast.makeText(this, "Tanda Air OFF", Toast.LENGTH_SHORT).show()
-        }
+        watermarkPreview.visibility = if (isWatermarkOn) View.VISIBLE else View.GONE
     }
 
-    // ================== UI UPDATES ==================
     private fun updateFlashUI() {
         when (flashState) {
             0 -> btnFlash.setImageResource(R.drawable.ic_flash_off)
@@ -785,7 +680,6 @@ class CameraActivity : AppCompatActivity() {
             .start()
     }
 
-    // ================== MODE ==================
     private fun switchMode(newMode: String) {
         currentMode = newMode
         val inactive = Color.parseColor("#99FFFFFF")
@@ -813,7 +707,6 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 15f
     }
 
-    // ================== ZOOM ==================
     private fun setZoomByIndex(index: Int) {
         zoomIndex = index
         updateZoomUI()
@@ -827,39 +720,30 @@ class CameraActivity : AppCompatActivity() {
         cam.cameraControl.setZoomRatio(clamped)
     }
 
-    // ================== CAMERA ==================
     private fun startCamera() {
         Log.d(TAG, "startCamera() — ratio=$currentRatio")
-
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             try {
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
                 val preview = Preview.Builder().build().also {
                     it.setSurfaceProvider(viewFinder.surfaceProvider)
                 }
-
                 val aspectRatio = when (currentRatio) {
                     "16:9" -> AspectRatio.RATIO_16_9
                     else   -> AspectRatio.RATIO_4_3
                 }
-
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .setTargetAspectRatio(aspectRatio)
                     .build()
-
                 val selector = CameraSelector.Builder()
                     .requireLensFacing(lensFacing)
                     .build()
-
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(this, selector, preview, imageCapture)
-
                 setSafeZoom(zoomValues[zoomIndex])
                 applyFlashToCapture()
-
                 Log.d(TAG, "Camera bind SUCCESS")
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind FAILED", e)
@@ -877,12 +761,10 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== CAPTURE ==================
     private fun takePhotoWithTimer() {
         val seconds = timerSeconds[timerState]
-        if (seconds == 0) {
-            takePhoto()
-        } else {
+        if (seconds == 0) takePhoto()
+        else {
             Toast.makeText(this, "Timer: $seconds detik", Toast.LENGTH_SHORT).show()
             object : CountDownTimer(seconds * 1000L, 1000L) {
                 override fun onTick(millisUntilFinished: Long) {
@@ -913,17 +795,296 @@ class CameraActivity : AppCompatActivity() {
                 override fun onError(exc: ImageCaptureException) {
                     Toast.makeText(baseContext, "Gagal: ${exc.message}", Toast.LENGTH_SHORT).show()
                 }
-
                 override fun onCaptureSuccess(image: ImageProxy) {
                     try {
                         var bitmap = image.toBitmap()
                         image.close()
 
-                        // 1. Crop 9:19
-                        if (currentRatio == "FULL") {
-                            bitmap = cropToFullScreen(bitmap)
+                        if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
+
+                        var finalBitmap = if (isPresetEnabled) applyPreset(bitmap, currentPreset) else bitmap
+
+                        if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
+                            finalBitmap = applyEnhancement(finalBitmap)
                         }
 
-                        // 2. Apply preset (paling utama)
-                        var finalBitmap = if (isPresetEnabled) {
-                            applyPreset(bitmap, currentPreset
+                        if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
+
+                        saveBitmapToGallery(finalBitmap)
+                    } catch (e: Exception) {
+                        Toast.makeText(baseContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        )
+    }
+
+    private fun cropToFullScreen(src: Bitmap): Bitmap {
+        val srcRatio = src.width.toFloat() / src.height.toFloat()
+        return if (srcRatio > FULL_SCREEN_RATIO) {
+            val newWidth = (src.height * FULL_SCREEN_RATIO).toInt()
+            val xOffset = (src.width - newWidth) / 2
+            Bitmap.createBitmap(src, xOffset, 0, newWidth, src.height)
+        } else {
+            val newHeight = (src.width / FULL_SCREEN_RATIO).toInt()
+            val yOffset = (src.height - newHeight) / 2
+            Bitmap.createBitmap(src, 0, yOffset, src.width, newHeight)
+        }
+    }
+
+    private fun applyPreset(src: Bitmap, preset: CameraPreset): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        val paint = Paint()
+
+        val c = preset.contrast
+        val b = preset.brightness
+        val t = (-0.5f * c + 0.5f) * 255f + b
+
+        val matrix = ColorMatrix(floatArrayOf(
+            c, 0f, 0f, 0f, t,
+            0f, c, 0f, 0f, t,
+            0f, 0f, c, 0f, t,
+            0f, 0f, 0f, 1f, 0f
+        ))
+
+        if (preset.saturation != 1f) {
+            val sat = ColorMatrix().apply { setSaturation(preset.saturation) }
+            matrix.postConcat(sat)
+        }
+
+        if (preset.warmth != 0f) {
+            val w = preset.warmth
+            val wm = ColorMatrix(floatArrayOf(
+                1f, 0f, 0f, 0f, w,
+                0f, 1f, 0f, 0f, 0f,
+                0f, 0f, 1f, 0f, -w,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(wm)
+        }
+
+        if (preset.tint != 0f) {
+            val tn = preset.tint
+            val tm = ColorMatrix(floatArrayOf(
+                1f, 0f, 0f, 0f, tn * 0.5f,
+                0f, 1f, 0f, 0f, -tn,
+                0f, 0f, 1f, 0f, tn,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(tm)
+        }
+
+        if (preset.shadowLift > 0f) {
+            val lift = preset.shadowLift * 40f
+            val sm = ColorMatrix(floatArrayOf(
+                1f, 0f, 0f, 0f, lift,
+                0f, 1f, 0f, 0f, lift,
+                0f, 0f, 1f, 0f, lift,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(sm)
+        }
+
+        if (preset.highlightRolloff > 0f) {
+            val c2 = 1f - (preset.highlightRolloff * 0.15f)
+            val t2 = (1f - c2) * 255f * 0.5f
+            val hm = ColorMatrix(floatArrayOf(
+                c2, 0f, 0f, 0f, t2,
+                0f, c2, 0f, 0f, t2,
+                0f, 0f, c2, 0f, t2,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(hm)
+        }
+
+        if (preset.vibrance > 0f) {
+            val vb = 1f + (preset.vibrance / 100f)
+            val vm = ColorMatrix().apply { setSaturation(vb) }
+            matrix.postConcat(vm)
+        }
+
+        if (preset.isBlackAndWhite) {
+            val bw = ColorMatrix().apply { setSaturation(0f) }
+            matrix.postConcat(bw)
+        }
+
+        if (preset.isVintage) {
+            val sepia = ColorMatrix(floatArrayOf(
+                0.393f, 0.769f, 0.189f, 0f, 0f,
+                0.349f, 0.686f, 0.168f, 0f, 0f,
+                0.272f, 0.534f, 0.131f, 0f, 0f,
+                0f, 0f, 0f, 1f, 0f
+            ))
+            matrix.postConcat(sepia)
+        }
+
+        paint.colorFilter = ColorMatrixColorFilter(matrix)
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return dest
+    }
+
+    private fun applyEnhancement(src: Bitmap): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        val paint = Paint()
+        val colorMatrix = ColorMatrix().apply { setSaturation(1.2f) }
+        val scaleMatrix = ColorMatrix(
+            floatArrayOf(
+                1.1f, 0f, 0f, 0f, 15f,
+                0f, 1.1f, 0f, 0f, 15f,
+                0f, 0f, 1.1f, 0f, 15f,
+                0f, 0f, 0f, 1f, 0f
+            )
+        )
+        colorMatrix.postConcat(scaleMatrix)
+        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return dest
+    }
+
+    private fun applyWatermarkToBitmap(src: Bitmap): Bitmap {
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        canvas.drawBitmap(src, 0f, 0f, null)
+
+        val paint = Paint().apply {
+            color = Color.WHITE
+            alpha = 180
+            textSize = src.width / 25f
+            isAntiAlias = true
+            typeface = Typeface.DEFAULT_BOLD
+            setShadowLayer(4f, 2f, 2f, Color.BLACK)
+        }
+
+        val text = "Ucam"
+        val textWidth = paint.measureText(text)
+        val x = src.width - textWidth - (src.width * 0.03f)
+        val y = src.height - (src.height * 0.04f)
+        canvas.drawText(text, x, y, paint)
+        return dest
+    }
+
+    private fun saveBitmapToGallery(bitmap: Bitmap) {
+        val now = Date()
+        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(now)
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UcamApp")
+            }
+        }
+
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        uri?.let {
+            val stream: OutputStream? = contentResolver.openOutputStream(it)
+            stream?.use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out) }
+
+            try {
+                contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
+                    val exif = ExifInterface(pfd.fileDescriptor)
+                    exif.setAttribute(ExifInterface.TAG_MAKE, "Ucam")
+                    exif.setAttribute(ExifInterface.TAG_MODEL, "Ucam Camera App")
+                    exif.setAttribute(ExifInterface.TAG_SOFTWARE, "Ucam v1.0")
+                    val dateFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US)
+                    val dateTime = dateFormat.format(now)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTime)
+                    exif.setAttribute(ExifInterface.TAG_DATETIME_DIGITIZED, dateTime)
+                    exif.setAttribute(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL.toString())
+                    exif.setAttribute(ExifInterface.TAG_IMAGE_WIDTH, bitmap.width.toString())
+                    exif.setAttribute(ExifInterface.TAG_IMAGE_LENGTH, bitmap.height.toString())
+                    exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, "25/1")
+                    exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM, "25")
+                    exif.setAttribute(ExifInterface.TAG_F_NUMBER, "18/10")
+                    exif.setAttribute(ExifInterface.TAG_APERTURE_VALUE, "18/10")
+                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, "1/60")
+                    exif.setAttribute(ExifInterface.TAG_ISO_SPEED_RATINGS, "400")
+                    exif.setAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY, "400")
+                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_BIAS_VALUE, "0/6")
+                    exif.setAttribute(ExifInterface.TAG_FLASH, "0")
+                    exif.setAttribute(ExifInterface.TAG_WHITE_BALANCE, "0")
+                    exif.setAttribute(ExifInterface.TAG_METERING_MODE, "5")
+                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_PROGRAM, "2")
+                    exif.setAttribute(ExifInterface.TAG_COLOR_SPACE, "1")
+                    exif.saveAttributes()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "EXIF write error", e)
+            }
+
+            Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
+            cameraExecutor.execute { loadLastPhotoThumbnail() }
+        }
+    }
+
+    private fun loadLastPhotoThumbnail() {
+        try {
+            val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATE_ADDED)
+            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+            val selectionArgs = arrayOf("%Pictures/UcamApp%")
+            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+            val cursor = contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection, selection, selectionArgs, sortOrder
+            )
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
+                    val uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                            decoder.isMutableRequired = false
+                            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        }
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
+                    }
+
+                    runOnUiThread {
+                        try {
+                            btnGalleryPreview.setImageDrawable(BitmapDrawable(resources, bitmap))
+                            btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
+                            btnGalleryPreview.background = null
+                            btnGalleryPreview.clipToOutline = true
+                            btnGalleryPreview.outlineProvider = object : ViewOutlineProvider() {
+                                override fun getOutline(view: View, outline: Outline) {
+                                    outline.setOval(0, 0, view.width, view.height)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Thumbnail error", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "loadLastPhotoThumbnail error", e)
+        }
+    }
+
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_PERMISSIONS) {
+            if (allPermissionsGranted()) {
+                viewFinder.postDelayed({ startCamera() }, 300)
+            } else {
+                Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+    }
+}
