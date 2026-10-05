@@ -26,6 +26,7 @@ import android.provider.MediaStore
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.Window
 import android.view.WindowManager
@@ -150,6 +151,7 @@ object PresetLibrary {
 // =====================================================
 class CameraActivity : AppCompatActivity() {
 
+    // ================== VIEWS ==================
     private lateinit var viewFinder: PreviewView
     private lateinit var focusRing: View
     private lateinit var topBar: View
@@ -183,6 +185,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var shutterInner: View
     private lateinit var btnSwitchCamera: ImageButton
 
+    // ================== STATE ==================
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
@@ -235,6 +238,7 @@ class CameraActivity : AppCompatActivity() {
         private const val TAG = "CameraActivity"
     }
 
+    // ================== LIFECYCLE ==================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
@@ -258,8 +262,6 @@ class CameraActivity : AppCompatActivity() {
         updateZoomUI()
 
         cameraExecutor.execute { loadLastPhotoThumbnail() }
-
-        Toast.makeText(this, "Preset: ${currentPreset.name}", Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
@@ -281,29 +283,35 @@ class CameraActivity : AppCompatActivity() {
         unregisterLevelSensor()
     }
 
+    // ================== BIND VIEWS ==================
     private fun bindViews() {
         viewFinder         = findViewById(R.id.viewFinder)
         focusRing          = findViewById(R.id.focusRing)
         topBar             = findViewById(R.id.topBar)
         bottomSection      = findViewById(R.id.bottomSection)
+
         gridOverlay        = findViewById(R.id.gridOverlay)
         levelLine          = findViewById(R.id.levelLine)
         focusPeakingRing   = findViewById(R.id.focusPeakingRing)
         watermarkPreview   = findViewById(R.id.watermarkPreview)
+
         btnFlash           = findViewById(R.id.btnFlash)
         btnHdr             = findViewById(R.id.btnHdr)
         btnTimer           = findViewById(R.id.btnTimer)
         btnSettings        = findViewById(R.id.btnSettings)
         tvTimerText        = findViewById(R.id.tvTimerText)
+
         zoom06             = findViewById(R.id.zoom06)
         zoom1x             = findViewById(R.id.zoom1x)
         zoom2x             = findViewById(R.id.zoom2x)
+
         modeNight          = findViewById(R.id.modeNight)
         modePortrait       = findViewById(R.id.modePortrait)
         modePhoto          = findViewById(R.id.modePhoto)
         modeVideo          = findViewById(R.id.modeVideo)
         modeVlog           = findViewById(R.id.modeVlog)
         modePro            = findViewById(R.id.modePro)
+
         btnGalleryPreview  = findViewById(R.id.btnGalleryPreview)
         btnFilter          = findViewById(R.id.btnFilter)
         btnCapture         = findViewById(R.id.btnCapture)
@@ -311,6 +319,7 @@ class CameraActivity : AppCompatActivity() {
         btnSwitchCamera    = findViewById(R.id.btnSwitchCamera)
     }
 
+    // ================== LISTENERS ==================
     private fun setupListeners() {
         btnFlash.setOnClickListener {
             flashState = (flashState + 1) % 3
@@ -361,7 +370,7 @@ class CameraActivity : AppCompatActivity() {
             isPresetEnabled = true
             Toast.makeText(
                 this,
-                "Preset: ${next.name}\n${next.description}",
+                "Filter: ${next.name}\n${next.description}",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -418,6 +427,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ================== SENSOR LEVEL ==================
     private val levelListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
             gravity = event.values.clone()
@@ -448,6 +458,7 @@ class CameraActivity : AppCompatActivity() {
         levelLine.setBackgroundColor(Color.parseColor(tint))
     }
 
+    // ================== SETTINGS OVERLAY ==================
     private fun showSettingsOverlay() {
         val dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -574,7 +585,10 @@ class CameraActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun applyAspectRatio() { startCamera() }
+    // ================== APPLY VISUAL ==================
+    private fun applyAspectRatio() {
+        startCamera()
+    }
 
     private fun applyGrid() {
         when (currentGrid) {
@@ -610,6 +624,7 @@ class CameraActivity : AppCompatActivity() {
         watermarkPreview.visibility = if (isWatermarkOn) View.VISIBLE else View.GONE
     }
 
+    // ================== UI UPDATES ==================
     private fun updateFlashUI() {
         when (flashState) {
             0 -> btnFlash.setImageResource(R.drawable.ic_flash_off)
@@ -680,6 +695,7 @@ class CameraActivity : AppCompatActivity() {
             .start()
     }
 
+    // ================== MODE ==================
     private fun switchMode(newMode: String) {
         currentMode = newMode
         val inactive = Color.parseColor("#99FFFFFF")
@@ -707,6 +723,7 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 15f
     }
 
+    // ================== ZOOM ==================
     private fun setZoomByIndex(index: Int) {
         zoomIndex = index
         updateZoomUI()
@@ -720,36 +737,85 @@ class CameraActivity : AppCompatActivity() {
         cam.cameraControl.setZoomRatio(clamped)
     }
 
+    // ================== CAMERA (FIX RASIO) ==================
     private fun startCamera() {
         Log.d(TAG, "startCamera() — ratio=$currentRatio")
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             try {
                 val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(viewFinder.surfaceProvider)
-                }
+
+                // Tentukan aspect ratio
                 val aspectRatio = when (currentRatio) {
                     "16:9" -> AspectRatio.RATIO_16_9
                     else   -> AspectRatio.RATIO_4_3
                 }
+
+                // ✅ PREVIEW dengan aspect ratio (fix rasio)
+                val preview = Preview.Builder()
+                    .setTargetAspectRatio(aspectRatio)
+                    .build()
+                    .also {
+                        it.setSurfaceProvider(viewFinder.surfaceProvider)
+                    }
+
+                // ✅ IMAGE CAPTURE dengan aspect ratio sama
                 imageCapture = ImageCapture.Builder()
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .setTargetAspectRatio(aspectRatio)
                     .build()
+
                 val selector = CameraSelector.Builder()
                     .requireLensFacing(lensFacing)
                     .build()
+
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(this, selector, preview, imageCapture)
+
                 setSafeZoom(zoomValues[zoomIndex])
                 applyFlashToCapture()
-                Log.d(TAG, "Camera bind SUCCESS")
+
+                // ✅ Update scale type preview sesuai rasio
+                updatePreviewScaleType()
+
+                Log.d(TAG, "Camera bind SUCCESS — ratio=$currentRatio")
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind FAILED", e)
                 Toast.makeText(this, "Camera error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    // ✅ FUNGSI BARU: Update preview scale type
+    private fun updatePreviewScaleType() {
+        when (currentRatio) {
+            "1:1" -> {
+                // Preview jadi persegi
+                val size = viewFinder.width.coerceAtMost(viewFinder.height)
+                val params = viewFinder.layoutParams
+                params.width = size
+                params.height = size
+                viewFinder.layoutParams = params
+                viewFinder.scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+            "4:3", "16:9" -> {
+                // Preview fit dengan bar hitam
+                val params = viewFinder.layoutParams
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT
+                viewFinder.layoutParams = params
+                viewFinder.scaleType = PreviewView.ScaleType.FIT_CENTER
+            }
+            "FULL" -> {
+                // Preview full screen (crop)
+                val params = viewFinder.layoutParams
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT
+                params.height = ViewGroup.LayoutParams.MATCH_PARENT
+                viewFinder.layoutParams = params
+                viewFinder.scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+        }
     }
 
     private fun applyFlashToCapture() {
@@ -761,6 +827,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ================== CAPTURE ==================
     private fun takePhotoWithTimer() {
         val seconds = timerSeconds[timerState]
         if (seconds == 0) takePhoto()
@@ -800,14 +867,20 @@ class CameraActivity : AppCompatActivity() {
                         var bitmap = image.toBitmap()
                         image.close()
 
-                        if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
+                        // Crop 9:19 kalau mode FULL
+                        if (currentRatio == "FULL") {
+                            bitmap = cropToFullScreen(bitmap)
+                        }
 
+                        // Apply preset
                         var finalBitmap = if (isPresetEnabled) applyPreset(bitmap, currentPreset) else bitmap
 
+                        // Apply HDR enhancement
                         if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
                             finalBitmap = applyEnhancement(finalBitmap)
                         }
 
+                        // Apply watermark
                         if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
 
                         saveBitmapToGallery(finalBitmap)
@@ -819,6 +892,7 @@ class CameraActivity : AppCompatActivity() {
         )
     }
 
+    // ================== CROP 9:19 ==================
     private fun cropToFullScreen(src: Bitmap): Bitmap {
         val srcRatio = src.width.toFloat() / src.height.toFloat()
         return if (srcRatio > FULL_SCREEN_RATIO) {
@@ -832,6 +906,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ================== APPLY PRESET ==================
     private fun applyPreset(src: Bitmap, preset: CameraPreset): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
@@ -924,6 +999,7 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
+    // ================== HDR ENHANCEMENT ==================
     private fun applyEnhancement(src: Bitmap): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
@@ -943,6 +1019,7 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
+    // ================== WATERMARK ==================
     private fun applyWatermarkToBitmap(src: Bitmap): Bitmap {
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
@@ -965,6 +1042,7 @@ class CameraActivity : AppCompatActivity() {
         return dest
     }
 
+    // ================== SAVE + EXIF ==================
     private fun saveBitmapToGallery(bitmap: Bitmap) {
         val now = Date()
         val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(now)
@@ -1019,6 +1097,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ================== THUMBNAIL ==================
     private fun loadLastPhotoThumbnail() {
         try {
             val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATE_ADDED)
@@ -1068,6 +1147,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    // ================== PERMISSIONS ==================
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
