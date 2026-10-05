@@ -56,6 +56,177 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+// =====================================================
+// DATA CLASS & PRESET LIBRARY
+// =====================================================
+data class CameraPreset(
+    val id: String,
+    val name: String,
+    val description: String,
+    val saturation: Float = 1.0f,
+    val contrast: Float = 1.0f,
+    val brightness: Float = 0f,
+    val warmth: Float = 0f,
+    val tint: Float = 0f,
+    val shadowLift: Float = 0f,
+    val highlightRolloff: Float = 0f,
+    val vibrance: Float = 0f,
+    val isBlackAndWhite: Boolean = false,
+    val isVintage: Boolean = false
+)
+
+object PresetLibrary {
+    val presets = listOf(
+        CameraPreset(
+            id = "natural",
+            name = "Natural",
+            description = "Warna asli",
+            saturation = 1.0f,
+            contrast = 1.0f
+        ),
+        CameraPreset(
+            id = "soft_pastel",
+            name = "Soft Pastel",
+            description = "Dreamy, cream tone, aesthetic",
+            saturation = 0.85f,
+            contrast = 0.85f,
+            brightness = 12f,
+            warmth = 8f,
+            tint = 5f,
+            shadowLift = 0.25f,
+            highlightRolloff = 0.15f,
+            vibrance = 10f
+        ),
+        CameraPreset(
+            id = "vivid",
+            name = "Vivid",
+            description = "Warna pop",
+            saturation = 1.35f,
+            contrast = 1.15f,
+            brightness = 5f,
+            warmth = 5f
+        ),
+        CameraPreset(
+            id = "cinematic",
+            name = "Cinematic",
+            description = "Teal-orange Sony",
+            saturation = 1.15f,
+            contrast = 1.25f,
+            brightness = -5f,
+            warmth = 10f,
+            tint = -10f,
+            shadowLift = 0.15f,
+            highlightRolloff = 0.2f
+        ),
+        CameraPreset(
+            id = "soft_iphone",
+            name = "Soft iPhone",
+            description = "Hangat, lembut",
+            saturation = 1.10f,
+            contrast = 1.08f,
+            brightness = 5f,
+            warmth = 8f,
+            shadowLift = 0.1f
+        ),
+        CameraPreset(
+            id = "fuji",
+            name = "Fuji Classic",
+            description = "Filmic hijau",
+            saturation = 0.95f,
+            contrast = 1.12f,
+            warmth = -5f,
+            tint = 5f,
+            shadowLift = 0.2f
+        ),
+        CameraPreset(
+            id = "bw",
+            name = "B&W",
+            description = "Hitam putih",
+            saturation = 0f,
+            contrast = 1.3f,
+            isBlackAndWhite = true
+        ),
+        CameraPreset(
+            id = "vintage",
+            name = "Vintage",
+            description = "Sepia old",
+            saturation = 0.8f,
+            contrast = 1.1f,
+            warmth = 15f,
+            isVintage = true
+        ),
+        CameraPreset(
+            id = "sunset_glow",
+            name = "Sunset Glow",
+            description = "Hangat golden sunset",
+            saturation = 1.15f,
+            contrast = 1.05f,
+            brightness = 8f,
+            warmth = 20f,
+            tint = 5f,
+            shadowLift = 0.2f,
+            highlightRolloff = 0.15f,
+            vibrance = 12f
+        ),
+        CameraPreset(
+            id = "cool_ocean",
+            name = "Cool Ocean",
+            description = "Biru dingin",
+            saturation = 1.10f,
+            contrast = 1.10f,
+            brightness = 3f,
+            warmth = -15f,
+            tint = -8f,
+            shadowLift = 0.15f,
+            vibrance = 10f
+        ),
+        CameraPreset(
+            id = "pink_dream",
+            name = "Pink Dream",
+            description = "Pink intens, dreamy",
+            saturation = 0.95f,
+            contrast = 0.90f,
+            brightness = 15f,
+            warmth = 5f,
+            tint = 18f,
+            shadowLift = 0.3f,
+            highlightRolloff = 0.2f,
+            vibrance = 15f
+        ),
+        CameraPreset(
+            id = "sepia_gold",
+            name = "Sepia Gold",
+            description = "Old money, golden",
+            saturation = 0.75f,
+            contrast = 1.05f,
+            brightness = 5f,
+            warmth = 25f,
+            tint = 8f,
+            shadowLift = 0.25f,
+            isVintage = true
+        ),
+        CameraPreset(
+            id = "cyber_neon",
+            name = "Cyber Neon",
+            description = "Purple-blue neon",
+            saturation = 1.30f,
+            contrast = 1.20f,
+            brightness = -8f,
+            warmth = -10f,
+            tint = -15f,
+            shadowLift = 0.1f,
+            highlightRolloff = 0.25f,
+            vibrance = 20f
+        )
+    )
+
+    fun getById(id: String): CameraPreset =
+        presets.find { it.id == id } ?: presets[0]
+}
+
+// =====================================================
+// CAMERA ACTIVITY
+// =====================================================
 class CameraActivity : AppCompatActivity() {
 
     // ================== VIEWS ==================
@@ -116,7 +287,9 @@ class CameraActivity : AppCompatActivity() {
     private var isWatermarkOn = false
     private var isFocusPeakingOn = false
 
-    private var currentEffectProfile = "NONE"
+    // PRESET
+    private var currentPreset: CameraPreset = PresetLibrary.getById("soft_pastel")
+    private var isPresetEnabled = true
 
     private val FULL_SCREEN_RATIO = 9f / 19.9f
 
@@ -168,6 +341,8 @@ class CameraActivity : AppCompatActivity() {
         updateZoomUI()
 
         cameraExecutor.execute { loadLastPhotoThumbnail() }
+
+        Toast.makeText(this, "Preset aktif: ${currentPreset.name}", Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {
@@ -268,11 +443,18 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+        // ============ TOMBOL ⭐ = CYCLE PRESET ============
         btnFilter.setOnClickListener {
-            val effects = listOf("NONE", "IPHONE", "SONY", "FUJI", "LEICA", "BW", "VINTAGE")
-            val idx = effects.indexOf(currentEffectProfile)
-            currentEffectProfile = effects[(idx + 1) % effects.size]
-            Toast.makeText(this, "Efek: $currentEffectProfile", Toast.LENGTH_SHORT).show()
+            val presets = PresetLibrary.presets
+            val idx = presets.indexOfFirst { it.id == currentPreset.id }
+            val next = presets[(idx + 1) % presets.size]
+            currentPreset = next
+            isPresetEnabled = true
+            Toast.makeText(
+                this,
+                "Preset: ${next.name}\n${next.description}",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
         btnCapture.setOnClickListener {
@@ -737,293 +919,11 @@ class CameraActivity : AppCompatActivity() {
                         var bitmap = image.toBitmap()
                         image.close()
 
+                        // 1. Crop 9:19
                         if (currentRatio == "FULL") {
                             bitmap = cropToFullScreen(bitmap)
                         }
 
-                        var finalBitmap = if (isMasterEffectOn) {
-                            applyEffectProfile(bitmap, currentEffectProfile)
-                        } else bitmap
-
-                        if (isHdrEnabled && (currentMode == "PRO" || currentMode == "PORTRAIT" || currentMode == "PHOTO")) {
-                            finalBitmap = applyEnhancement(finalBitmap)
-                        }
-
-                        if (isWatermarkOn) {
-                            finalBitmap = applyWatermarkToBitmap(finalBitmap)
-                        }
-
-                        saveBitmapToGallery(finalBitmap)
-                    } catch (e: Exception) {
-                        Toast.makeText(baseContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        )
-    }
-
-    // ================== CROP 9:19 ==================
-    private fun cropToFullScreen(src: Bitmap): Bitmap {
-        val srcRatio = src.width.toFloat() / src.height.toFloat()
-
-        return if (srcRatio > FULL_SCREEN_RATIO) {
-            val newWidth = (src.height * FULL_SCREEN_RATIO).toInt()
-            val xOffset = (src.width - newWidth) / 2
-            Bitmap.createBitmap(src, xOffset, 0, newWidth, src.height)
-        } else {
-            val newHeight = (src.width / FULL_SCREEN_RATIO).toInt()
-            val yOffset = (src.height - newHeight) / 2
-            Bitmap.createBitmap(src, 0, yOffset, src.width, newHeight)
-        }
-    }
-
-    // ================== EFEK / COLOR GRADING ==================
-    private fun applyEffectProfile(src: Bitmap, profile: String): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        val paint = Paint()
-
-        val matrix = when (profile) {
-            "IPHONE" -> ColorMatrix(floatArrayOf(
-                1.10f, 0.00f, 0.00f, 0f, 8f,
-                0.00f, 1.05f, 0.00f, 0f, 4f,
-                0.00f, 0.00f, 0.95f, 0f, 0f,
-                0.00f, 0.00f, 0.00f, 1f, 0f
-            ))
-            "SONY" -> ColorMatrix(floatArrayOf(
-                1.15f, 0.05f, -0.05f, 0f, 5f,
-                0.00f, 1.08f, 0.00f, 0f, 0f,
-                0.00f, 0.02f, 1.10f, 0f, -5f,
-                0.00f, 0.00f, 0.00f, 1f, 0f
-            ))
-            "FUJI" -> ColorMatrix(floatArrayOf(
-                0.95f, 0.05f, 0.05f, 0f, 10f,
-                0.05f, 0.95f, 0.05f, 0f, 8f,
-                0.05f, 0.05f, 0.90f, 0f, 5f,
-                0.00f, 0.00f, 0.00f, 1f, 0f
-            ))
-            "LEICA" -> ColorMatrix(floatArrayOf(
-                1.05f, 0.02f, -0.02f, 0f, 3f,
-                0.00f, 1.02f, 0.00f, 0f, 3f,
-                0.00f, 0.00f, 1.05f, 0f, 3f,
-                0.00f, 0.00f, 0.00f, 1f, 0f
-            ))
-            "BW" -> ColorMatrix().apply { setSaturation(0f) }
-            "VINTAGE" -> ColorMatrix(floatArrayOf(
-                1.10f, 0.10f, 0.10f, 0f, -10f,
-                0.05f, 1.05f, 0.05f, 0f, -5f,
-                0.00f, 0.00f, 0.90f, 0f, 10f,
-                0.00f, 0.00f, 0.00f, 1f, 0f
-            ))
-            else -> ColorMatrix()
-        }
-
-        if (profile == "IPHONE" || profile == "SONY") {
-            val sat = ColorMatrix().apply { setSaturation(1.15f) }
-            matrix.postConcat(sat)
-        }
-
-        if (profile != "NONE") {
-            val contrast = when (profile) {
-                "SONY" -> 1.18f
-                "IPHONE" -> 1.08f
-                "FUJI" -> 1.10f
-                else -> 1.05f
-            }
-            val t = (-0.5f * contrast + 0.5f) * 255f
-            val cm = ColorMatrix(floatArrayOf(
-                contrast, 0f, 0f, 0f, t,
-                0f, contrast, 0f, 0f, t,
-                0f, 0f, contrast, 0f, t,
-                0f, 0f, 0f, 1f, 0f
-            ))
-            matrix.postConcat(cm)
-        }
-
-        paint.colorFilter = ColorMatrixColorFilter(matrix)
-        canvas.drawBitmap(src, 0f, 0f, paint)
-        return dest
-    }
-
-    private fun applyEnhancement(src: Bitmap): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        val paint = Paint()
-
-        val colorMatrix = ColorMatrix().apply { setSaturation(1.2f) }
-        val scaleMatrix = ColorMatrix(
-            floatArrayOf(
-                1.1f, 0f, 0f, 0f, 15f,
-                0f, 1.1f, 0f, 0f, 15f,
-                0f, 0f, 1.1f, 0f, 15f,
-                0f, 0f, 0f, 1f, 0f
-            )
-        )
-        colorMatrix.postConcat(scaleMatrix)
-        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
-        canvas.drawBitmap(src, 0f, 0f, paint)
-        return dest
-    }
-
-    // ================== WATERMARK ==================
-    private fun applyWatermarkToBitmap(src: Bitmap): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        canvas.drawBitmap(src, 0f, 0f, null)
-
-        val paint = Paint().apply {
-            color = Color.WHITE
-            alpha = 180
-            textSize = src.width / 25f
-            isAntiAlias = true
-            typeface = Typeface.DEFAULT_BOLD
-            setShadowLayer(4f, 2f, 2f, Color.BLACK)
-        }
-
-        val text = "Ucam"
-        val textWidth = paint.measureText(text)
-        val x = src.width - textWidth - (src.width * 0.03f)
-        val y = src.height - (src.height * 0.04f)
-
-        canvas.drawText(text, x, y, paint)
-        return dest
-    }
-
-    // ================== SAVE + EXIF ==================
-    private fun saveBitmapToGallery(bitmap: Bitmap) {
-        val now = Date()
-        val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(now)
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, "Ucam_${currentMode}_$name.jpg")
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UcamApp")
-            }
-        }
-
-        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-        uri?.let {
-            val stream: OutputStream? = contentResolver.openOutputStream(it)
-            stream?.use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
-            }
-
-            try {
-                contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                    val exif = ExifInterface(pfd.fileDescriptor)
-
-                    exif.setAttribute(ExifInterface.TAG_MAKE, "Ucam")
-                    exif.setAttribute(ExifInterface.TAG_MODEL, "Ucam Camera App")
-                    exif.setAttribute(ExifInterface.TAG_SOFTWARE, "Ucam v1.0")
-
-                    val dateFormat = SimpleDateFormat("yyyy:MM:dd HH:mm:ss", Locale.US)
-                    val dateTime = dateFormat.format(now)
-                    exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
-                    exif.setAttribute(ExifInterface.TAG_DATETIME_ORIGINAL, dateTime)
-                    exif.setAttribute(ExifInterface.TAG_DATETIME_DIGITIZED, dateTime)
-
-                    exif.setAttribute(
-                        ExifInterface.TAG_ORIENTATION,
-                        ExifInterface.ORIENTATION_NORMAL.toString()
-                    )
-
-                    exif.setAttribute(ExifInterface.TAG_IMAGE_WIDTH, bitmap.width.toString())
-                    exif.setAttribute(ExifInterface.TAG_IMAGE_LENGTH, bitmap.height.toString())
-
-                    exif.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, "50/10")
-                    exif.setAttribute(ExifInterface.TAG_F_NUMBER, "18/10")
-                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, "1/60")
-                    exif.setAttribute(ExifInterface.TAG_ISO_SPEED, "400")
-                    exif.setAttribute(ExifInterface.TAG_EXPOSURE_BIAS_VALUE, "0/6")
-                    exif.setAttribute(ExifInterface.TAG_FLASH, "0")
-                    exif.setAttribute(ExifInterface.TAG_WHITE_BALANCE, "0")
-
-                    exif.saveAttributes()
-                    Log.d(TAG, "EXIF metadata ditulis")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "EXIF write error", e)
-            }
-
-            Toast.makeText(this, "Foto disimpan!", Toast.LENGTH_SHORT).show()
-            cameraExecutor.execute { loadLastPhotoThumbnail() }
-        }
-    }
-
-    // ================== THUMBNAIL ==================
-    private fun loadLastPhotoThumbnail() {
-        try {
-            val projection = arrayOf(
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.DATE_ADDED
-            )
-            val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
-            val selectionArgs = arrayOf("%Pictures/UcamApp%")
-            val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
-
-            val cursor = contentResolver.query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection, selection, selectionArgs, sortOrder
-            )
-
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val id = it.getLong(it.getColumnIndexOrThrow(MediaStore.Images.Media._ID))
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
-                    )
-
-                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
-                        android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                            decoder.isMutableRequired = false
-                            decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
-                        }
-                    } else {
-                        @Suppress("DEPRECATION")
-                        MediaStore.Images.Media.getBitmap(contentResolver, uri)
-                    }
-
-                    runOnUiThread {
-                        try {
-                            btnGalleryPreview.setImageDrawable(BitmapDrawable(resources, bitmap))
-                            btnGalleryPreview.scaleType = ImageView.ScaleType.CENTER_CROP
-                            btnGalleryPreview.background = null
-                            btnGalleryPreview.clipToOutline = true
-                            btnGalleryPreview.outlineProvider = object : ViewOutlineProvider() {
-                                override fun getOutline(view: View, outline: Outline) {
-                                    outline.setOval(0, 0, view.width, view.height)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Thumbnail error", e)
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "loadLastPhotoThumbnail error", e)
-        }
-    }
-
-    // ================== PERMISSIONS ==================
-    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                viewFinder.postDelayed({ startCamera() }, 300)
-            } else {
-                Toast.makeText(this, "Izin diperlukan.", Toast.LENGTH_LONG).show()
-                finish()
-            }
-        }
-    }
-}
+                        // 2. Apply preset (paling utama)
+                        var finalBitmap = if (isPresetEnabled) {
+                            applyPreset(bitmap, currentPreset
