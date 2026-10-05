@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <stroke android:width="1dp" android:color="#99FFFFFF" />
-    <solid android:color="#00000000" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Ring luar (glow) -->
+    <item>
+        <shape android:shape="oval">
+            <stroke android:width="6dp" android:color="#33FFC107" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+    <!-- Ring dalam (tegas) -->
+    <item>
+        <shape android:shape="oval">
+            <stroke android:width="2dp" android:color="#FFC107" />
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+</layer-list>
