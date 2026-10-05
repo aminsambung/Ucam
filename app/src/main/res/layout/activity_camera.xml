@@ -72,7 +72,7 @@
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:background="@drawable/bg_focus_ring"
-        android:visibility="visible" />
+        android:visibility="invisible" />
 
     <LinearLayout
         android:id="@+id/topBar"
