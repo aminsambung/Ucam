@@ -254,10 +254,10 @@
                     android:paddingHorizontal="14dp" />
 
                 <TextView
-                    android:id="@+id/modeVlog"
+                    android:id="@+id/modePolaroid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Film Vlog"
+                    android:text="Polaroid"
                     android:textColor="#99FFFFFF"
                     android:textSize="13sp"
                     android:paddingHorizontal="14dp" />
