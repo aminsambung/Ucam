@@ -22,6 +22,8 @@ import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.MotionEvent
@@ -131,13 +133,17 @@ class CameraActivity : AppCompatActivity() {
     // ================== VIEWS ==================
     private lateinit var viewFinder: PreviewView
     private lateinit var touchOverlay: View
-    private lateinit var focusRing: View
     private lateinit var topBar: View
     private lateinit var bottomSection: View
     private lateinit var gridOverlay: View
     private lateinit var levelLine: View
     private lateinit var focusPeakingRing: View
     private lateinit var watermarkPreview: TextView
+
+    // Custom views untuk focus + exposure
+    private lateinit var focusRingView: FocusRingView
+    private lateinit var exposureSliderView: ExposureSliderView
+    private lateinit var tvEVValue: TextView
 
     private lateinit var btnFlash: ImageButton
     private lateinit var btnHdr: TextView
@@ -167,6 +173,10 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var zoomBar: android.widget.LinearLayout
     private lateinit var modeBarContainer: android.widget.HorizontalScrollView
     private var isFilterPanelVisible = false
+
+    // Focus/Exposure state
+    private var isSliderVisible = false
+    private var hideHandler: Handler? = null
 
     // ================== STATE ==================
     private var camera: Camera? = null
@@ -240,6 +250,7 @@ class CameraActivity : AppCompatActivity() {
         super.onDestroy()
         cameraExecutor.shutdown()
         unregisterLevelSensor()
+        hideHandler?.removeCallbacksAndMessages(null)
     }
 
     override fun onResume() {
@@ -259,13 +270,18 @@ class CameraActivity : AppCompatActivity() {
     private fun bindViews() {
         viewFinder         = findViewById(R.id.viewFinder)
         touchOverlay       = findViewById(R.id.touchOverlay)
-        focusRing          = findViewById(R.id.focusRing)
         topBar             = findViewById(R.id.topBar)
         bottomSection      = findViewById(R.id.bottomSection)
         gridOverlay        = findViewById(R.id.gridOverlay)
         levelLine          = findViewById(R.id.levelLine)
         focusPeakingRing   = findViewById(R.id.focusPeakingRing)
         watermarkPreview   = findViewById(R.id.watermarkPreview)
+
+        // Custom views
+        focusRingView       = findViewById(R.id.focusRingView)
+        exposureSliderView  = findViewById(R.id.exposureSliderView)
+        tvEVValue           = findViewById(R.id.tvEVValue)
+
         btnFlash           = findViewById(R.id.btnFlash)
         btnHdr             = findViewById(R.id.btnHdr)
         btnTimer           = findViewById(R.id.btnTimer)
@@ -286,7 +302,6 @@ class CameraActivity : AppCompatActivity() {
         shutterInner       = findViewById(R.id.shutterInner)
         btnSwitchCamera    = findViewById(R.id.btnSwitchCamera)
 
-        // Filter panel views
         filterPanel        = findViewById(R.id.filterPanel)
         filterList         = findViewById(R.id.filterList)
         tvFilterLabel      = findViewById(R.id.tvFilterLabel)
@@ -339,7 +354,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // ✅ Tombol ✨ filter — hide/show elemen
+        // Tombol ✨ filter — hide/show
         btnFilter.setOnClickListener {
             isFilterPanelVisible = !isFilterPanelVisible
             if (isFilterPanelVisible) {
@@ -374,6 +389,18 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
+        // ✅ Setup Exposure Slider
+        exposureSliderView.onExposureChanged = { ev ->
+            updateEVDisplay(ev)
+            try {
+                val evIndex = (ev * 10).toInt()
+                camera?.cameraControl?.setExposureCompensationIndex(evIndex)
+            } catch (e: Exception) {
+                Log.e(TAG, "Exposure error: ${e.message}")
+            }
+        }
+
+        // ✅ Tap overlay — focus + exposure
         touchOverlay.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val factory = viewFinder.meteringPointFactory
@@ -384,7 +411,14 @@ class CameraActivity : AppCompatActivity() {
                 ).setAutoCancelDuration(5, TimeUnit.SECONDS).build()
                 camera?.cameraControl?.startFocusAndMetering(action)
                     ?.addListener({ Log.d(TAG, "Focus & metering selesai") }, ContextCompat.getMainExecutor(this))
+
+                // Reset EV ke 0 setiap tap baru
+                exposureSliderView.currentEV = 0f
+                try { camera?.cameraControl?.setExposureCompensationIndex(0) } catch (_: Exception) {}
+
+                // Tampilkan ring + slider + EV display
                 showFocusRing(event.x, event.y)
+
                 if (isFocusPeakingOn) {
                     focusPeakingRing.translationX = event.x - focusPeakingRing.width / 2f
                     focusPeakingRing.translationY = event.y - focusPeakingRing.height / 2f
@@ -401,6 +435,58 @@ class CameraActivity : AppCompatActivity() {
             }
             false
         }
+    }
+
+    // ================== FOCUS RING + EXPOSURE ==================
+    private fun showFocusRing(touchX: Float, touchY: Float) {
+        if (focusRingView.width == 0) {
+            focusRingView.post { showFocusRing(touchX, touchY) }
+            return
+        }
+
+        val ringSize = focusRingView.width
+        val sliderSize = exposureSliderView.width
+
+        // Ring di titik tap
+        focusRingView.translationX = touchX - ringSize / 2f
+        focusRingView.translationY = touchY - ringSize / 2f
+
+        // Slider di sekeliling ring
+        exposureSliderView.translationX = touchX - sliderSize / 2f
+        exposureSliderView.translationY = touchY - sliderSize / 2f
+
+        // EV display di kanan ring
+        tvEVValue.translationX = touchX + (ringSize / 2f) + 30f
+        tvEVValue.translationY = touchY - 20f
+
+        focusRingView.visibility = View.VISIBLE
+        focusRingView.alpha = 1f
+        exposureSliderView.visibility = View.VISIBLE
+        exposureSliderView.alpha = 1f
+        tvEVValue.visibility = View.VISIBLE
+        tvEVValue.alpha = 1f
+        updateEVDisplay(exposureSliderView.currentEV)
+
+        isSliderVisible = true
+        scheduleAutoHide()
+    }
+
+    private fun scheduleAutoHide() {
+        hideHandler?.removeCallbacksAndMessages(null)
+        hideHandler = Handler(Looper.getMainLooper())
+        hideHandler?.postDelayed({
+            if (isSliderVisible) {
+                focusRingView.animate().alpha(0.3f).setDuration(500).start()
+                exposureSliderView.animate().alpha(0.3f).setDuration(500).start()
+                tvEVValue.animate().alpha(0.3f).setDuration(500).start()
+            }
+        }, 3000)
+    }
+
+    private fun updateEVDisplay(ev: Float) {
+        val sign = if (ev >= 0) "+" else "-"
+        val absVal = abs(ev)
+        tvEVValue.text = "$sign${String.format(Locale.US, "%.1f", absVal).replace(".", ",")}"
     }
 
     // ================== POPULATE FILTER LIST ==================
@@ -442,7 +528,6 @@ class CameraActivity : AppCompatActivity() {
                 populateFilterList()
                 Toast.makeText(this, "Filter: ${preset.name}", Toast.LENGTH_SHORT).show()
 
-                // ✅ AUTO-CLOSE — tutup panel & munculkan elemen kembali
                 btnFilter.postDelayed({
                     isFilterPanelVisible = false
                     zoomBar.visibility = View.VISIBLE
@@ -657,26 +742,6 @@ class CameraActivity : AppCompatActivity() {
         activeView.textSize = 13f
     }
 
-    private fun showFocusRing(touchX: Float, touchY: Float) {
-        if (focusRing.width == 0) {
-            focusRing.post { showFocusRing(touchX, touchY) }
-            return
-        }
-        focusRing.translationX = touchX - focusRing.width / 2f
-        focusRing.translationY = touchY - focusRing.height / 2f
-        focusRing.visibility = View.VISIBLE
-        focusRing.alpha = 1f
-        focusRing.scaleX = 1.5f
-        focusRing.scaleY = 1.5f
-        focusRing.animate()
-            .scaleX(1f).scaleY(1f).setDuration(300)
-            .withEndAction {
-                focusRing.animate().alpha(0f).setDuration(800)
-                    .withEndAction { focusRing.visibility = View.INVISIBLE }
-                    .start()
-            }.start()
-    }
-
     // ================== MODE ==================
     private fun switchMode(newMode: String) {
         currentMode = newMode
@@ -829,7 +894,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ================== MINI-ISP (OPTIMIZED) ==================
+    // ================== MINI-ISP ==================
     private fun applyMiniISP(src: Bitmap): Bitmap {
         val wbMatrix = calculateWhiteBalanceMatrix(src)
         val toneMatrix = ColorMatrix(floatArrayOf(
