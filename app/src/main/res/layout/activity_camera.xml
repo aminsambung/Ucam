@@ -153,57 +153,80 @@
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Zoom Bar + Tombol Sparkle -->
         <LinearLayout
             android:id="@+id/zoomBar"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingVertical="8dp">
-
-            <TextView
-                android:id="@+id/zoom06"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0,6"
-                android:textColor="#99FFFFFF"
-                android:textSize="12sp"
-                android:paddingHorizontal="6dp" />
+            android:paddingVertical="8dp"
+            android:paddingHorizontal="16dp">
 
             <View
-                android:layout_width="3dp"
-                android:layout_height="3dp"
-                android:background="#99FFFFFF"
-                android:layout_marginHorizontal="2dp" />
+                android:layout_width="40dp"
+                android:layout_height="40dp" />
 
-            <TextView
-                android:id="@+id/zoom1x"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="1x"
-                android:textColor="#FFC107"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="6dp" />
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center">
 
-            <View
-                android:layout_width="3dp"
-                android:layout_height="3dp"
-                android:background="#99FFFFFF"
-                android:layout_marginHorizontal="2dp" />
+                <TextView
+                    android:id="@+id/zoom06"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0,6"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="6dp" />
 
-            <TextView
-                android:id="@+id/zoom2x"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="2"
-                android:textColor="#99FFFFFF"
-                android:textSize="12sp"
-                android:paddingHorizontal="6dp" />
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="3dp"
+                    android:background="#99FFFFFF"
+                    android:layout_marginHorizontal="2dp" />
+
+                <TextView
+                    android:id="@+id/zoom1x"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1x"
+                    android:textColor="#FFC107"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="6dp" />
+
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="3dp"
+                    android:background="#99FFFFFF"
+                    android:layout_marginHorizontal="2dp" />
+
+                <TextView
+                    android:id="@+id/zoom2x"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="12sp"
+                    android:paddingHorizontal="6dp" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btnFilter"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_filter_button"
+                android:src="@drawable/ic_sparkle"
+                app:tint="@android:color/white" />
         </LinearLayout>
 
+        <!-- Mode Bar -->
         <HorizontalScrollView
+            android:id="@+id/modeBarContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
@@ -273,7 +296,38 @@
             </LinearLayout>
         </HorizontalScrollView>
 
+        <!-- Panel Filter (muncul saat tombol ✨ diklik) -->
+        <HorizontalScrollView
+            android:id="@+id/filterPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:visibility="gone"
+            android:paddingVertical="8dp">
+
+            <LinearLayout
+                android:id="@+id/filterList"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/tvFilterLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Filter"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:visibility="gone"
+            android:paddingVertical="12dp" />
+
+        <!-- Baris Bawah: Galeri + Shutter + Switch -->
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/bottomRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingHorizontal="28dp"
@@ -288,17 +342,6 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
-            <ImageButton
-                android:id="@+id/btnFilter"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_key"
-                app:tint="@android:color/white"
-                app:layout_constraintBottom_toTopOf="@id/btnGalleryPreview"
-                app:layout_constraintStart_toStartOf="parent"
-                android:layout_marginBottom="4dp" />
 
             <FrameLayout
                 android:id="@+id/btnCapture"
