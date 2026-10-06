@@ -117,10 +117,8 @@ object PresetLibrary {
         CameraPreset("sepia_gold", "Sepia Gold", "Old money golden",
             saturation = 0.75f, contrast = 1.05f, brightness = 5f,
             warmth = 25f, tint = 8f, shadowLift = 0.25f, isVintage = true),
-        CameraPreset("cyber_neon", "Cyber Neon", "Purple-blue neon",
-            saturation = 1.30f, contrast = 1.20f, brightness = -8f,
-            warmth = -10f, tint = -15f, shadowLift = 0.1f,
-            highlightRolloff = 0.25f, vibrance = 20f)
+        CameraPreset("sketch", "Sketch", "Pencil sketch artistic",
+            saturation = 0f, contrast = 1.2f, isBlackAndWhite = true)
     )
     fun getById(id: String): CameraPreset =
         presets.find { it.id == id } ?: presets[0]
@@ -583,7 +581,7 @@ class CameraActivity : AppCompatActivity() {
             "cool_ocean"   -> Color.parseColor("#4A90C2")
             "pink_dream"   -> Color.parseColor("#FFB6D9")
             "sepia_gold"   -> Color.parseColor("#C2A56B")
-            "cyber_neon"   -> Color.parseColor("#8B00FF")
+            "sketch"       -> Color.parseColor("#E0E0E0")
             else           -> Color.GRAY
         }
     }
@@ -791,7 +789,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // ✅ Fungsi set DSLR brand
     private fun setDslrBrand(brand: String) {
         currentBrand = brand
         val inactive = Color.parseColor("#99FFFFFF")
@@ -814,7 +811,6 @@ class CameraActivity : AppCompatActivity() {
                 view.setTypeface(normal)
             }
         }
-
         Toast.makeText(this, "DSLR: ${brand.replaceFirstChar { it.uppercase() }}", Toast.LENGTH_SHORT).show()
     }
 
@@ -924,23 +920,18 @@ class CameraActivity : AppCompatActivity() {
 
                         if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
 
-                        // Mini-ISP
                         var finalBitmap = applyMiniISP(bitmap)
 
-                        // DSLR Look
                         if (currentMode == "DSLR") {
                             finalBitmap = applyDslrLook(finalBitmap, currentBrand, dslrIntensity)
                         }
 
-                        // Filter preset
                         if (isPresetEnabled && currentPreset.id != "natural") {
                             finalBitmap = applyPreset(finalBitmap, currentPreset)
                         }
 
-                        // Watermark
                         if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
 
-                        // Polaroid
                         if (currentMode == "POLAROID") finalBitmap = applyPolaroid(finalBitmap)
 
                         saveBitmapToGallery(finalBitmap)
@@ -1027,7 +1018,6 @@ class CameraActivity : AppCompatActivity() {
     // ================== DSLR LOOK ==================
     private fun applyDslrLook(src: Bitmap, brand: String, intensity: Int): Bitmap {
         val alpha = intensity / 100f
-
         val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
         val canvas = Canvas(dest)
         val paint = Paint()
@@ -1060,7 +1050,6 @@ class CameraActivity : AppCompatActivity() {
             else -> ColorMatrix()
         }
 
-        // Contrast boost
         val contrast = 1f + (0.10f * alpha)
         val t = (-0.5f * contrast + 0.5f) * 255f
         matrix.postConcat(ColorMatrix(floatArrayOf(
@@ -1070,11 +1059,9 @@ class CameraActivity : AppCompatActivity() {
             0f, 0f, 0f, 1f, 0f
         )))
 
-        // Vibrance
         val vibrance = 1f + (0.12f * alpha)
         matrix.postConcat(ColorMatrix().apply { setSaturation(vibrance) })
 
-        // Micro-contrast
         val mc = 1f + (0.06f * alpha)
         val tMc = (-0.5f * mc + 0.5f) * 255f
         matrix.postConcat(ColorMatrix(floatArrayOf(
@@ -1084,7 +1071,6 @@ class CameraActivity : AppCompatActivity() {
             0f, 0f, 0f, 1f, 0f
         )))
 
-        // Shadow lift
         val lift = 8f * alpha
         matrix.postConcat(ColorMatrix(floatArrayOf(
             1f, 0f, 0f, 0f, lift,
@@ -1151,7 +1137,94 @@ class CameraActivity : AppCompatActivity() {
         paint.isAntiAlias = true
         paint.isFilterBitmap = true
         canvas.drawBitmap(src, 0f, 0f, paint)
+
+        // ✅ SKETCH — processing khusus
+        if (preset.id == "sketch") {
+            return applyPencilSketch(dest)
+        }
+
         return dest
+    }
+
+    // ================== PENCIL SKETCH ==================
+    private fun applyPencilSketch(src: Bitmap): Bitmap {
+        // 1. Grayscale
+        val gray = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        val grayCanvas = Canvas(gray)
+        val grayPaint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+            isAntiAlias = true
+        }
+        grayCanvas.drawBitmap(src, 0f, 0f, grayPaint)
+
+        // 2. Invert
+        val inverted = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        val invCanvas = Canvas(inverted)
+        val invPaint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                -1f, 0f, 0f, 0f, 255f,
+                0f, -1f, 0f, 0f, 255f,
+                0f, 0f, -1f, 0f, 255f,
+                0f, 0f, 0f, 1f, 0f
+            )))
+            isAntiAlias = true
+        }
+        invCanvas.drawBitmap(gray, 0f, 0f, invPaint)
+
+        // 3. Blur via downscale-upscale
+        val blurScale = 4
+        val small = Bitmap.createScaledBitmap(
+            inverted,
+            (inverted.width / blurScale).coerceAtLeast(1),
+            (inverted.height / blurScale).coerceAtLeast(1),
+            true
+        )
+        val blurred = Bitmap.createScaledBitmap(small, inverted.width, inverted.height, true)
+
+        // 4. Color dodge
+        val result = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        val resultPixels = IntArray(src.width * src.height)
+        val grayPixels = IntArray(src.width * src.height)
+        val blurPixels = IntArray(src.width * src.height)
+
+        gray.getPixels(grayPixels, 0, src.width, 0, 0, src.width, src.height)
+        blurred.getPixels(blurPixels, 0, src.width, 0, 0, src.width, src.height)
+
+        for (i in grayPixels.indices) {
+            val grayPix = grayPixels[i]
+            val blurPix = blurPixels[i]
+
+            val gR = (grayPix shr 16) and 0xFF
+            val gG = (grayPix shr 8) and 0xFF
+            val gB = grayPix and 0xFF
+
+            val bR = (blurPix shr 16) and 0xFF
+            val bG = (blurPix shr 8) and 0xFF
+            val bB = blurPix and 0xFF
+
+            val rDodge = if (bR >= 255) 255 else (gR * 255 / (255 - bR)).coerceIn(0, 255)
+            val gDodge = if (bG >= 255) 255 else (gG * 255 / (255 - bG)).coerceIn(0, 255)
+            val bDodge = if (bB >= 255) 255 else (gB * 255 / (255 - bB)).coerceIn(0, 255)
+
+            resultPixels[i] = (0xFF shl 24) or (rDodge shl 16) or (gDodge shl 8) or bDodge
+        }
+        result.setPixels(resultPixels, 0, src.width, 0, 0, src.width, src.height)
+
+        // 5. Boost kontras
+        val final = Bitmap.createBitmap(src.width, src.height, Bitmap.Config.ARGB_8888)
+        val finalCanvas = Canvas(final)
+        val finalPaint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                1.4f, 0f, 0f, 0f, -50f,
+                0f, 1.4f, 0f, 0f, -50f,
+                0f, 0f, 1.4f, 0f, -50f,
+                0f, 0f, 0f, 1f, 0f
+            )))
+            isAntiAlias = true
+        }
+        finalCanvas.drawBitmap(result, 0f, 0f, finalPaint)
+
+        return final
     }
 
     // ================== WATERMARK ==================
