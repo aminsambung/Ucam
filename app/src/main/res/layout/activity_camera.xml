@@ -69,22 +69,25 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- ✅ Exposure Slider — visibility INVISIBLE -->
     <com.example.camera.ExposureSliderView
         android:id="@+id/exposureSliderView"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:visibility="gone"
+        android:visibility="invisible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- ✅ Focus Ring — visibility INVISIBLE -->
     <com.example.camera.FocusRingView
         android:id="@+id/focusRingView"
         android:layout_width="120dp"
         android:layout_height="120dp"
-        android:visibility="gone"
+        android:visibility="invisible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <!-- ✅ EV Value — visibility INVISIBLE -->
     <TextView
         android:id="@+id/tvEVValue"
         android:layout_width="wrap_content"
@@ -97,7 +100,7 @@
         android:shadowDx="2"
         android:shadowDy="2"
         android:shadowRadius="4"
-        android:visibility="gone"
+        android:visibility="invisible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -176,7 +179,7 @@
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- ✅ INDIKATOR REC (muncul saat mode Video) -->
+        <!-- ✅ INDIKATOR REC -->
         <LinearLayout
             android:id="@+id/recIndicator"
             android:layout_width="wrap_content"
