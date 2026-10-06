@@ -34,6 +34,7 @@ import android.view.Window
 import android.view.WindowManager
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -140,7 +141,6 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var focusPeakingRing: View
     private lateinit var watermarkPreview: TextView
 
-    // Custom views untuk focus + exposure
     private lateinit var focusRingView: FocusRingView
     private lateinit var exposureSliderView: ExposureSliderView
     private lateinit var tvEVValue: TextView
@@ -153,7 +153,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var zoom06: TextView
     private lateinit var zoom1x: TextView
     private lateinit var zoom2x: TextView
-    private lateinit var modeNight: TextView
+    private lateinit var modeDslr: TextView
     private lateinit var modePortrait: TextView
     private lateinit var modePhoto: TextView
     private lateinit var modeVideo: TextView
@@ -165,7 +165,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var shutterInner: View
     private lateinit var btnSwitchCamera: ImageButton
 
-    // Filter panel views
+    // Filter panel
     private lateinit var filterPanel: android.widget.HorizontalScrollView
     private lateinit var filterList: android.widget.LinearLayout
     private lateinit var tvFilterLabel: TextView
@@ -174,7 +174,18 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var modeBarContainer: android.widget.HorizontalScrollView
     private var isFilterPanelVisible = false
 
-    // Focus/Exposure state
+    // DSLR panel
+    private lateinit var dslrPanel: android.widget.LinearLayout
+    private lateinit var brandCanon: TextView
+    private lateinit var brandNikon: TextView
+    private lateinit var brandSony: TextView
+    private lateinit var brandFuji: TextView
+    private lateinit var seekDslrIntensity: SeekBar
+    private lateinit var tvDslrIntensity: TextView
+    private var currentBrand = "canon"
+    private var dslrIntensity = 70
+
+    // Focus/Exposure
     private var isSliderVisible = false
     private var hideHandler: Handler? = null
 
@@ -277,7 +288,6 @@ class CameraActivity : AppCompatActivity() {
         focusPeakingRing   = findViewById(R.id.focusPeakingRing)
         watermarkPreview   = findViewById(R.id.watermarkPreview)
 
-        // Custom views
         focusRingView       = findViewById(R.id.focusRingView)
         exposureSliderView  = findViewById(R.id.exposureSliderView)
         tvEVValue           = findViewById(R.id.tvEVValue)
@@ -290,7 +300,7 @@ class CameraActivity : AppCompatActivity() {
         zoom06             = findViewById(R.id.zoom06)
         zoom1x             = findViewById(R.id.zoom1x)
         zoom2x             = findViewById(R.id.zoom2x)
-        modeNight          = findViewById(R.id.modeNight)
+        modeDslr           = findViewById(R.id.modeDslr)
         modePortrait       = findViewById(R.id.modePortrait)
         modePhoto          = findViewById(R.id.modePhoto)
         modeVideo          = findViewById(R.id.modeVideo)
@@ -308,9 +318,16 @@ class CameraActivity : AppCompatActivity() {
         bottomRow          = findViewById(R.id.bottomRow)
         zoomBar            = findViewById(R.id.zoomBar)
         modeBarContainer   = findViewById(R.id.modeBarContainer)
-    }
 
-    // ================== LISTENERS ==================
+        dslrPanel          = findViewById(R.id.dslrPanel)
+        brandCanon         = findViewById(R.id.brandCanon)
+        brandNikon         = findViewById(R.id.brandNikon)
+        brandSony          = findViewById(R.id.brandSony)
+        brandFuji          = findViewById(R.id.brandFuji)
+        seekDslrIntensity  = findViewById(R.id.seekDslrIntensity)
+        tvDslrIntensity    = findViewById(R.id.tvDslrIntensity)
+    }
+        // ================== SETUP LISTENERS ==================
     private fun setupListeners() {
         btnFlash.setOnClickListener {
             flashState = (flashState + 1) % 3
@@ -337,7 +354,7 @@ class CameraActivity : AppCompatActivity() {
         zoom1x.setOnClickListener  { setZoomByIndex(1) }
         zoom2x.setOnClickListener  { setZoomByIndex(2) }
 
-        modeNight.setOnClickListener    { switchMode("NIGHT") }
+        modeDslr.setOnClickListener     { switchMode("DSLR") }
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
         modePhoto.setOnClickListener    { switchMode("PHOTO") }
         modeVideo.setOnClickListener    { switchMode("VIDEO") }
@@ -354,7 +371,7 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        // Tombol ✨ filter — hide/show
+        // Tombol ✨ filter
         btnFilter.setOnClickListener {
             isFilterPanelVisible = !isFilterPanelVisible
             if (isFilterPanelVisible) {
@@ -389,7 +406,23 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // ✅ Setup Exposure Slider
+        // ✅ DSLR Brand Selector
+        brandCanon.setOnClickListener { setDslrBrand("canon") }
+        brandNikon.setOnClickListener { setDslrBrand("nikon") }
+        brandSony.setOnClickListener  { setDslrBrand("sony") }
+        brandFuji.setOnClickListener  { setDslrBrand("fuji") }
+
+        // ✅ DSLR Intensity Slider
+        seekDslrIntensity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                dslrIntensity = progress
+                tvDslrIntensity.text = "Intensity: $progress%"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+
+        // ✅ Exposure Slider callback
         exposureSliderView.onExposureChanged = { ev ->
             updateEVDisplay(ev)
             try {
@@ -412,11 +445,9 @@ class CameraActivity : AppCompatActivity() {
                 camera?.cameraControl?.startFocusAndMetering(action)
                     ?.addListener({ Log.d(TAG, "Focus & metering selesai") }, ContextCompat.getMainExecutor(this))
 
-                // Reset EV ke 0 setiap tap baru
                 exposureSliderView.currentEV = 0f
                 try { camera?.cameraControl?.setExposureCompensationIndex(0) } catch (_: Exception) {}
 
-                // Tampilkan ring + slider + EV display
                 showFocusRing(event.x, event.y)
 
                 if (isFocusPeakingOn) {
@@ -447,15 +478,11 @@ class CameraActivity : AppCompatActivity() {
         val ringSize = focusRingView.width
         val sliderSize = exposureSliderView.width
 
-        // Ring di titik tap
         focusRingView.translationX = touchX - ringSize / 2f
         focusRingView.translationY = touchY - ringSize / 2f
-
-        // Slider di sekeliling ring
         exposureSliderView.translationX = touchX - sliderSize / 2f
         exposureSliderView.translationY = touchY - sliderSize / 2f
 
-        // EV display di kanan ring
         tvEVValue.translationX = touchX + (ringSize / 2f) + 30f
         tvEVValue.translationY = touchY - 20f
 
@@ -747,15 +774,48 @@ class CameraActivity : AppCompatActivity() {
         currentMode = newMode
         val inactive = Color.parseColor("#99FFFFFF")
         val active = Color.parseColor("#FFC107")
-        listOf(modeNight, modePortrait, modePhoto, modeVideo, modePolaroid, modePro).forEach {
+        listOf(modeDslr, modePortrait, modePhoto, modeVideo, modePolaroid, modePro).forEach {
             it.setTextColor(inactive); it.setTypeface(Typeface.DEFAULT); it.textSize = 13f
         }
         val activeView = when (newMode) {
-            "NIGHT" -> modeNight; "PORTRAIT" -> modePortrait; "PHOTO" -> modePhoto
+            "DSLR" -> modeDslr; "PORTRAIT" -> modePortrait; "PHOTO" -> modePhoto
             "VIDEO" -> modeVideo; "POLAROID" -> modePolaroid; "PRO" -> modePro
             else -> modePhoto
         }
         activeView.setTextColor(active); activeView.setTypeface(Typeface.DEFAULT_BOLD); activeView.textSize = 15f
+
+        if (newMode == "DSLR") {
+            dslrPanel.visibility = View.VISIBLE
+        } else {
+            dslrPanel.visibility = View.GONE
+        }
+    }
+
+    // ✅ Fungsi set DSLR brand
+    private fun setDslrBrand(brand: String) {
+        currentBrand = brand
+        val inactive = Color.parseColor("#99FFFFFF")
+        val active = Color.parseColor("#FFC107")
+        val bold = Typeface.DEFAULT_BOLD
+        val normal = Typeface.DEFAULT
+
+        val pairs = listOf(
+            brandCanon to "canon",
+            brandNikon to "nikon",
+            brandSony to "sony",
+            brandFuji to "fuji"
+        )
+        for ((view, b) in pairs) {
+            if (b == brand) {
+                view.setTextColor(active)
+                view.setTypeface(bold)
+            } else {
+                view.setTextColor(inactive)
+                view.setTypeface(normal)
+            }
+        }
+
+        Toast.makeText(this, "DSLR: ${brand.replaceFirstChar { it.uppercase() }}", Toast.LENGTH_SHORT).show()
     }
 
     // ================== ZOOM ==================
@@ -864,14 +924,23 @@ class CameraActivity : AppCompatActivity() {
 
                         if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
 
+                        // Mini-ISP
                         var finalBitmap = applyMiniISP(bitmap)
 
+                        // DSLR Look
+                        if (currentMode == "DSLR") {
+                            finalBitmap = applyDslrLook(finalBitmap, currentBrand, dslrIntensity)
+                        }
+
+                        // Filter preset
                         if (isPresetEnabled && currentPreset.id != "natural") {
                             finalBitmap = applyPreset(finalBitmap, currentPreset)
                         }
 
+                        // Watermark
                         if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
 
+                        // Polaroid
                         if (currentMode == "POLAROID") finalBitmap = applyPolaroid(finalBitmap)
 
                         saveBitmapToGallery(finalBitmap)
@@ -953,6 +1022,82 @@ class CameraActivity : AppCompatActivity() {
             0f, 0f, bScale, 0f, 0f,
             0f, 0f, 0f, 1f, 0f
         ))
+    }
+
+    // ================== DSLR LOOK ==================
+    private fun applyDslrLook(src: Bitmap, brand: String, intensity: Int): Bitmap {
+        val alpha = intensity / 100f
+
+        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(dest)
+        val paint = Paint()
+
+        val matrix = when (brand) {
+            "canon" -> ColorMatrix(floatArrayOf(
+                1.08f, 0.02f, 0.00f, 0f, 10f,
+                0.00f, 1.04f, 0.00f, 0f, 6f,
+                0.00f, 0.00f, 0.96f, 0f, 0f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "nikon" -> ColorMatrix(floatArrayOf(
+                1.02f, 0.00f, 0.00f, 0f, 3f,
+                0.00f, 1.02f, 0.00f, 0f, 3f,
+                0.00f, 0.00f, 1.02f, 0f, 3f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "sony" -> ColorMatrix(floatArrayOf(
+                1.10f, 0.05f, -0.05f, 0f, 5f,
+                0.00f, 1.05f, 0.00f, 0f, 0f,
+                0.00f, 0.02f, 1.08f, 0f, -3f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            "fuji" -> ColorMatrix(floatArrayOf(
+                0.98f, 0.03f, 0.03f, 0f, 8f,
+                0.03f, 0.98f, 0.03f, 0f, 6f,
+                0.03f, 0.03f, 0.94f, 0f, 4f,
+                0.00f, 0.00f, 0.00f, 1f, 0f
+            ))
+            else -> ColorMatrix()
+        }
+
+        // Contrast boost
+        val contrast = 1f + (0.10f * alpha)
+        val t = (-0.5f * contrast + 0.5f) * 255f
+        matrix.postConcat(ColorMatrix(floatArrayOf(
+            contrast, 0f, 0f, 0f, t,
+            0f, contrast, 0f, 0f, t,
+            0f, 0f, contrast, 0f, t,
+            0f, 0f, 0f, 1f, 0f
+        )))
+
+        // Vibrance
+        val vibrance = 1f + (0.12f * alpha)
+        matrix.postConcat(ColorMatrix().apply { setSaturation(vibrance) })
+
+        // Micro-contrast
+        val mc = 1f + (0.06f * alpha)
+        val tMc = (-0.5f * mc + 0.5f) * 255f
+        matrix.postConcat(ColorMatrix(floatArrayOf(
+            mc, 0f, 0f, 0f, tMc,
+            0f, mc, 0f, 0f, tMc,
+            0f, 0f, mc, 0f, tMc,
+            0f, 0f, 0f, 1f, 0f
+        )))
+
+        // Shadow lift
+        val lift = 8f * alpha
+        matrix.postConcat(ColorMatrix(floatArrayOf(
+            1f, 0f, 0f, 0f, lift,
+            0f, 1f, 0f, 0f, lift,
+            0f, 0f, 1f, 0f, lift,
+            0f, 0f, 0f, 1f, 0f
+        )))
+
+        paint.colorFilter = ColorMatrixColorFilter(matrix)
+        paint.isAntiAlias = true
+        paint.isFilterBitmap = true
+        canvas.drawBitmap(src, 0f, 0f, paint)
+        return dest
     }
 
     // ================== APPLY PRESET ==================
