@@ -57,6 +57,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
+// =====================================================
+// DATA CLASS & PRESET LIBRARY
+// =====================================================
 data class CameraPreset(
     val id: String,
     val name: String,
@@ -120,6 +123,9 @@ object PresetLibrary {
         presets.find { it.id == id } ?: presets[0]
 }
 
+// =====================================================
+// CAMERA ACTIVITY
+// =====================================================
 class CameraActivity : AppCompatActivity() {
 
     private lateinit var viewFinder: PreviewView
@@ -144,7 +150,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var modePortrait: TextView
     private lateinit var modePhoto: TextView
     private lateinit var modeVideo: TextView
-    private lateinit var modeVlog: TextView
+    private lateinit var modePolaroid: TextView
     private lateinit var modePro: TextView
     private lateinit var btnGalleryPreview: ImageButton
     private lateinit var btnFilter: ImageButton
@@ -259,7 +265,7 @@ class CameraActivity : AppCompatActivity() {
         modePortrait       = findViewById(R.id.modePortrait)
         modePhoto          = findViewById(R.id.modePhoto)
         modeVideo          = findViewById(R.id.modeVideo)
-        modeVlog           = findViewById(R.id.modeVlog)
+        modePolaroid       = findViewById(R.id.modePolaroid)
         modePro            = findViewById(R.id.modePro)
         btnGalleryPreview  = findViewById(R.id.btnGalleryPreview)
         btnFilter          = findViewById(R.id.btnFilter)
@@ -273,6 +279,11 @@ class CameraActivity : AppCompatActivity() {
             flashState = (flashState + 1) % 3
             updateFlashUI()
             applyFlashToCapture()
+            try {
+                camera?.cameraControl?.enableTorch(flashState == 1)
+            } catch (e: Exception) {
+                Log.e(TAG, "Torch error: ${e.message}")
+            }
         }
         btnHdr.setOnClickListener {
             isHdrEnabled = !isHdrEnabled
@@ -292,7 +303,7 @@ class CameraActivity : AppCompatActivity() {
         modePortrait.setOnClickListener { switchMode("PORTRAIT") }
         modePhoto.setOnClickListener    { switchMode("PHOTO") }
         modeVideo.setOnClickListener    { switchMode("VIDEO") }
-        modeVlog.setOnClickListener     { switchMode("VLOG") }
+        modePolaroid.setOnClickListener { switchMode("POLAROID") }
         modePro.setOnClickListener      { switchMode("PRO") }
         btnGalleryPreview.setOnClickListener {
             val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -312,7 +323,7 @@ class CameraActivity : AppCompatActivity() {
             Toast.makeText(this, "Filter: ${next.name}\n${next.description}", Toast.LENGTH_SHORT).show()
         }
         btnCapture.setOnClickListener {
-            if (currentMode == "VIDEO" || currentMode == "VLOG") {
+            if (currentMode == "VIDEO") {
                 Toast.makeText(this, "Rekam video (belum diimplementasi)", Toast.LENGTH_SHORT).show()
             } else {
                 takePhotoWithTimer()
@@ -326,26 +337,19 @@ class CameraActivity : AppCompatActivity() {
             startCamera()
         }
 
-        // ✅ TAP TO FOCUS — PAKAI touchOverlay (bukan viewFinder)
         touchOverlay.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
-                Log.d("FOCUS_DEBUG", "Tap detected: x=${event.x}, y=${event.y}")
-
                 val factory = viewFinder.meteringPointFactory
                 val point = factory.createPoint(event.x, event.y)
-
                 val action = FocusMeteringAction.Builder(
                     point,
                     FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
                 ).setAutoCancelDuration(5, TimeUnit.SECONDS).build()
-
                 camera?.cameraControl?.startFocusAndMetering(action)
                     ?.addListener({
                         Log.d(TAG, "Focus & metering selesai")
                     }, ContextCompat.getMainExecutor(this))
-
                 showFocusRing(event.x, event.y)
-
                 if (isFocusPeakingOn) {
                     focusPeakingRing.translationX = event.x - focusPeakingRing.width / 2f
                     focusPeakingRing.translationY = event.y - focusPeakingRing.height / 2f
@@ -454,12 +458,10 @@ class CameraActivity : AppCompatActivity() {
         ratio43.setOnClickListener   { currentRatio = "4:3";  styleGroup(ratio43, true, ratioGroup);  applyAspectRatio() }
         ratio169.setOnClickListener  { currentRatio = "16:9"; styleGroup(ratio169, true, ratioGroup); applyAspectRatio() }
         ratioFull.setOnClickListener { currentRatio = "FULL"; styleGroup(ratioFull, true, ratioGroup); applyAspectRatio() }
-
         timerOff.setOnClickListener { currentTimer = 0; timerState = 0; styleGroup(timerOff, true, timerGroup); updateTimerUI() }
         timer3.setOnClickListener   { currentTimer = 1; timerState = 1; styleGroup(timer3, true, timerGroup);   updateTimerUI() }
         timer5.setOnClickListener   { currentTimer = 2; timerState = 2; styleGroup(timer5, true, timerGroup);   updateTimerUI() }
         timer10.setOnClickListener  { currentTimer = 3; timerState = 3; styleGroup(timer10, true, timerGroup);  updateTimerUI() }
-
         btnGrid.setOnClickListener {
             currentGrid = (currentGrid + 1) % 4
             btnGrid.background.setTint(if (currentGrid > 0) Color.parseColor("#FFC107") else Color.WHITE)
@@ -542,20 +544,16 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun showFocusRing(touchX: Float, touchY: Float) {
-        Log.d("FOCUS_DEBUG", "showFocusRing: x=$touchX, y=$touchY, w=${focusRing.width}")
-
         if (focusRing.width == 0) {
             focusRing.post { showFocusRing(touchX, touchY) }
             return
         }
-
         focusRing.translationX = touchX - focusRing.width / 2f
         focusRing.translationY = touchY - focusRing.height / 2f
         focusRing.visibility = View.VISIBLE
         focusRing.alpha = 1f
         focusRing.scaleX = 1.5f
         focusRing.scaleY = 1.5f
-
         focusRing.animate()
             .scaleX(1f).scaleY(1f).setDuration(300)
             .withEndAction {
@@ -569,12 +567,12 @@ class CameraActivity : AppCompatActivity() {
         currentMode = newMode
         val inactive = Color.parseColor("#99FFFFFF")
         val active = Color.parseColor("#FFC107")
-        listOf(modeNight, modePortrait, modePhoto, modeVideo, modeVlog, modePro).forEach {
+        listOf(modeNight, modePortrait, modePhoto, modeVideo, modePolaroid, modePro).forEach {
             it.setTextColor(inactive); it.setTypeface(Typeface.DEFAULT); it.textSize = 13f
         }
         val activeView = when (newMode) {
             "NIGHT" -> modeNight; "PORTRAIT" -> modePortrait; "PHOTO" -> modePhoto
-            "VIDEO" -> modeVideo; "VLOG" -> modeVlog; "PRO" -> modePro
+            "VIDEO" -> modeVideo; "POLAROID" -> modePolaroid; "PRO" -> modePro
             else -> modePhoto
         }
         activeView.setTextColor(active); activeView.setTypeface(Typeface.DEFAULT_BOLD); activeView.textSize = 15f
@@ -686,6 +684,7 @@ class CameraActivity : AppCompatActivity() {
                             finalBitmap = applyEnhancement(finalBitmap)
                         }
                         if (isWatermarkOn) finalBitmap = applyWatermarkToBitmap(finalBitmap)
+                        if (currentMode == "POLAROID") finalBitmap = applyPolaroid(finalBitmap)
                         saveBitmapToGallery(finalBitmap)
                     } catch (e: Exception) {
                         Toast.makeText(baseContext, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -784,6 +783,55 @@ class CameraActivity : AppCompatActivity() {
         val textWidth = paint.measureText(text)
         canvas.drawText(text, src.width - textWidth - (src.width * 0.03f), src.height - (src.height * 0.04f), paint)
         return dest
+    }
+
+    // ✅ FUNGSI POLAROID
+    private fun applyPolaroid(src: Bitmap): Bitmap {
+        val vintageMatrix = ColorMatrix().apply { setSaturation(0.85f) }
+        val warmMatrix = ColorMatrix(floatArrayOf(
+            1.05f, 0f, 0f, 0f, 8f,
+            0f, 1.02f, 0f, 0f, 4f,
+            0f, 0f, 0.95f, 0f, 0f,
+            0f, 0f, 0f, 1f, 0f
+        ))
+        vintageMatrix.postConcat(warmMatrix)
+
+        val borderSide = (src.width * 0.08f).toInt()
+        val borderTop = (src.width * 0.08f).toInt()
+        val borderBottom = (src.width * 0.25f).toInt()
+
+        val polaroidWidth = src.width + borderSide * 2
+        val polaroidHeight = src.height + borderTop + borderBottom
+
+        val polaroid = Bitmap.createBitmap(polaroidWidth, polaroidHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(polaroid)
+        canvas.drawColor(Color.parseColor("#FFFEF7"))
+
+        val paint = Paint().apply {
+            colorFilter = ColorMatrixColorFilter(vintageMatrix)
+            isAntiAlias = true
+        }
+        val photoRect = android.graphics.Rect(
+            borderSide, borderTop,
+            borderSide + src.width,
+            borderTop + src.height
+        )
+        canvas.drawBitmap(src, null, photoRect, paint)
+
+        val textPaint = Paint().apply {
+            color = Color.parseColor("#333333")
+            textSize = src.width / 18f
+            isAntiAlias = true
+            typeface = Typeface.create(Typeface.SERIF, Typeface.ITALIC)
+            textAlign = Paint.Align.CENTER
+        }
+        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+        val text = "Ucam • ${dateFormat.format(Date())}"
+        val textX = polaroidWidth / 2f
+        val textY = polaroidHeight - (borderBottom * 0.4f)
+        canvas.drawText(text, textX, textY, textPaint)
+
+        return polaroid
     }
 
     private fun saveBitmapToGallery(bitmap: Bitmap) {
