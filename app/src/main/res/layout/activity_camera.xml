@@ -69,7 +69,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ✅ Custom View: Exposure Slider Melingkar -->
     <com.example.camera.ExposureSliderView
         android:id="@+id/exposureSliderView"
         android:layout_width="200dp"
@@ -78,7 +77,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ✅ Custom View: Focus Ring + Tick Marks -->
     <com.example.camera.FocusRingView
         android:id="@+id/focusRingView"
         android:layout_width="120dp"
@@ -87,7 +85,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ✅ Nilai EV Display -->
     <TextView
         android:id="@+id/tvEVValue"
         android:layout_width="wrap_content"
@@ -179,7 +176,6 @@
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Zoom Bar + Tombol ✨ -->
         <LinearLayout
             android:id="@+id/zoomBar"
             android:layout_width="match_parent"
@@ -250,7 +246,6 @@
                 app:tint="@android:color/white" />
         </LinearLayout>
 
-        <!-- Mode Bar -->
         <HorizontalScrollView
             android:id="@+id/modeBarContainer"
             android:layout_width="match_parent"
@@ -266,10 +261,10 @@
                 android:paddingHorizontal="16dp">
 
                 <TextView
-                    android:id="@+id/modeNight"
+                    android:id="@+id/modeDslr"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Malam"
+                    android:text="DSLR"
                     android:textColor="#99FFFFFF"
                     android:textSize="13sp"
                     android:paddingHorizontal="14dp" />
@@ -322,7 +317,6 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- Panel Filter -->
         <HorizontalScrollView
             android:id="@+id/filterPanel"
             android:layout_width="match_parent"
@@ -351,7 +345,83 @@
             android:visibility="gone"
             android:paddingVertical="12dp" />
 
-        <!-- Baris Bawah -->
+        <LinearLayout
+            android:id="@+id/dslrPanel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:paddingVertical="12dp"
+            android:paddingHorizontal="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/brandCanon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Canon"
+                    android:textColor="#FFC107"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+
+                <TextView
+                    android:id="@+id/brandNikon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nikon"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+
+                <TextView
+                    android:id="@+id/brandSony"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sony"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+
+                <TextView
+                    android:id="@+id/brandFuji"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Fuji"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="13sp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvDslrIntensity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Intensity: 70%"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:layout_marginTop="12dp" />
+
+            <SeekBar
+                android:id="@+id/seekDslrIntensity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="70"
+                android:progressTint="#FFC107"
+                android:thumbTint="#FFC107" />
+
+        </LinearLayout>
+
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/bottomRow"
             android:layout_width="match_parent"
