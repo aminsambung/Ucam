@@ -159,6 +159,15 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var shutterInner: View
     private lateinit var btnSwitchCamera: ImageButton
 
+    // Filter panel views
+    private lateinit var filterPanel: android.widget.HorizontalScrollView
+    private lateinit var filterList: android.widget.LinearLayout
+    private lateinit var tvFilterLabel: TextView
+    private lateinit var bottomRow: androidx.constraintlayout.widget.ConstraintLayout
+    private lateinit var zoomBar: android.widget.LinearLayout
+    private lateinit var modeBarContainer: android.widget.HorizontalScrollView
+    private var isFilterPanelVisible = false
+
     // ================== STATE ==================
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
@@ -276,6 +285,14 @@ class CameraActivity : AppCompatActivity() {
         btnCapture         = findViewById(R.id.btnCapture)
         shutterInner       = findViewById(R.id.shutterInner)
         btnSwitchCamera    = findViewById(R.id.btnSwitchCamera)
+
+        // Filter panel views
+        filterPanel        = findViewById(R.id.filterPanel)
+        filterList         = findViewById(R.id.filterList)
+        tvFilterLabel      = findViewById(R.id.tvFilterLabel)
+        bottomRow          = findViewById(R.id.bottomRow)
+        zoomBar            = findViewById(R.id.zoomBar)
+        modeBarContainer   = findViewById(R.id.modeBarContainer)
     }
 
     // ================== LISTENERS ==================
@@ -322,13 +339,23 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
+        // ✅ Tombol ✨ filter — hide/show elemen
         btnFilter.setOnClickListener {
-            val presets = PresetLibrary.presets
-            val idx = presets.indexOfFirst { it.id == currentPreset.id }
-            val next = presets[(idx + 1) % presets.size]
-            currentPreset = next
-            isPresetEnabled = true
-            Toast.makeText(this, "Filter: ${next.name}\n${next.description}", Toast.LENGTH_SHORT).show()
+            isFilterPanelVisible = !isFilterPanelVisible
+            if (isFilterPanelVisible) {
+                zoomBar.visibility = View.GONE
+                modeBarContainer.visibility = View.GONE
+                bottomRow.visibility = View.GONE
+                filterPanel.visibility = View.VISIBLE
+                tvFilterLabel.visibility = View.VISIBLE
+                populateFilterList()
+            } else {
+                zoomBar.visibility = View.VISIBLE
+                modeBarContainer.visibility = View.VISIBLE
+                bottomRow.visibility = View.VISIBLE
+                filterPanel.visibility = View.GONE
+                tvFilterLabel.visibility = View.GONE
+            }
         }
 
         btnCapture.setOnClickListener {
@@ -373,6 +400,79 @@ class CameraActivity : AppCompatActivity() {
                 return@setOnTouchListener true
             }
             false
+        }
+    }
+
+    // ================== POPULATE FILTER LIST ==================
+    private fun populateFilterList() {
+        filterList.removeAllViews()
+
+        PresetLibrary.presets.forEach { preset ->
+            val container = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setPadding(12, 4, 12, 4)
+            }
+
+            val thumb = View(this).apply {
+                val size = 140
+                layoutParams = android.widget.LinearLayout.LayoutParams(size, size)
+                setBackgroundColor(getColorForPreset(preset))
+                foreground = ContextCompat.getDrawable(
+                    this@CameraActivity,
+                    if (preset.id == currentPreset.id) R.drawable.filter_thumb_active
+                    else R.drawable.filter_thumb_inactive
+                )
+            }
+
+            val label = TextView(this).apply {
+                text = preset.name
+                setTextColor(if (preset.id == currentPreset.id) Color.parseColor("#FFC107") else Color.WHITE)
+                textSize = 10f
+                gravity = android.view.Gravity.CENTER
+                setPadding(0, 6, 0, 0)
+            }
+
+            container.addView(thumb)
+            container.addView(label)
+
+            container.setOnClickListener {
+                currentPreset = preset
+                isPresetEnabled = (preset.id != "natural")
+                populateFilterList()
+                Toast.makeText(this, "Filter: ${preset.name}", Toast.LENGTH_SHORT).show()
+
+                // ✅ AUTO-CLOSE — tutup panel & munculkan elemen kembali
+                btnFilter.postDelayed({
+                    isFilterPanelVisible = false
+                    zoomBar.visibility = View.VISIBLE
+                    modeBarContainer.visibility = View.VISIBLE
+                    bottomRow.visibility = View.VISIBLE
+                    filterPanel.visibility = View.GONE
+                    tvFilterLabel.visibility = View.GONE
+                }, 400)
+            }
+
+            filterList.addView(container)
+        }
+    }
+
+    private fun getColorForPreset(preset: CameraPreset): Int {
+        return when (preset.id) {
+            "natural"      -> Color.parseColor("#AAAAAA")
+            "soft_pastel"  -> Color.parseColor("#F5D7D7")
+            "vivid"        -> Color.parseColor("#FF6B6B")
+            "cinematic"    -> Color.parseColor("#2C5F7F")
+            "soft_iphone"  -> Color.parseColor("#F5C99A")
+            "fuji"         -> Color.parseColor("#8BAA7A")
+            "bw"           -> Color.parseColor("#555555")
+            "vintage"      -> Color.parseColor("#B8885A")
+            "sunset_glow"  -> Color.parseColor("#FF8C42")
+            "cool_ocean"   -> Color.parseColor("#4A90C2")
+            "pink_dream"   -> Color.parseColor("#FFB6D9")
+            "sepia_gold"   -> Color.parseColor("#C2A56B")
+            "cyber_neon"   -> Color.parseColor("#8B00FF")
+            else           -> Color.GRAY
         }
     }
 
@@ -699,7 +799,6 @@ class CameraActivity : AppCompatActivity() {
 
                         if (currentRatio == "FULL") bitmap = cropToFullScreen(bitmap)
 
-                        // ✅ Mini-ISP optimized (cepat, tanpa loop pixel)
                         var finalBitmap = applyMiniISP(bitmap)
 
                         if (isPresetEnabled && currentPreset.id != "natural") {
@@ -730,35 +829,22 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    // =====================================================
-    // MINI-ISP — OPTIMIZED (semua via ColorMatrix)
-    // =====================================================
+    // ================== MINI-ISP (OPTIMIZED) ==================
     private fun applyMiniISP(src: Bitmap): Bitmap {
-        // Semua processing dalam 1 ColorMatrix chain → cepat (~100-200ms)
-
-        // 1. Auto White Balance (hitung dari sampling, lalu apply matrix)
         val wbMatrix = calculateWhiteBalanceMatrix(src)
-
-        // 2. Tone Curve (contrast + shadow lift)
         val toneMatrix = ColorMatrix(floatArrayOf(
             1.10f, 0f, 0f, 0f, 14f,
             0f, 1.10f, 0f, 0f, 14f,
             0f, 0f, 1.10f, 0f, 14f,
             0f, 0f, 0f, 1f, 0f
         ))
-
-        // 3. Saturation + Vibrance
         val satMatrix = ColorMatrix().apply { setSaturation(1.12f) }
-
-        // 4. Micro-contrast (sedikit sharpen feel via contrast)
         val microContrast = ColorMatrix(floatArrayOf(
             1.05f, 0f, 0f, 0f, 0f,
             0f, 1.05f, 0f, 0f, 0f,
             0f, 0f, 1.05f, 0f, 0f,
             0f, 0f, 0f, 1f, 0f
         ))
-
-        // Gabungkan semua
         wbMatrix.postConcat(toneMatrix)
         wbMatrix.postConcat(satMatrix)
         wbMatrix.postConcat(microContrast)
@@ -777,7 +863,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun calculateWhiteBalanceMatrix(src: Bitmap): ColorMatrix {
         var rSum = 0L; var gSum = 0L; var bSum = 0L; var count = 0
-        val step = 30 // sampling lebih jarang = lebih cepat
+        val step = 30
         for (x in 0 until src.width step step) {
             for (y in 0 until src.height step step) {
                 val p = src.getPixel(x, y)
@@ -796,7 +882,6 @@ class CameraActivity : AppCompatActivity() {
         val rScale = (gray / rAvg).coerceIn(0.85f, 1.15f)
         val gScale = (gray / gAvg).coerceIn(0.85f, 1.15f)
         val bScale = (gray / bAvg).coerceIn(0.85f, 1.15f)
-
         return ColorMatrix(floatArrayOf(
             rScale, 0f, 0f, 0f, 0f,
             0f, gScale, 0f, 0f, 0f,
