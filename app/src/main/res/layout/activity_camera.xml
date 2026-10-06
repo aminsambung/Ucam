@@ -69,12 +69,38 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <View
-        android:id="@+id/focusRing"
+    <!-- ✅ Custom View: Exposure Slider Melingkar -->
+    <com.example.camera.ExposureSliderView
+        android:id="@+id/exposureSliderView"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ✅ Custom View: Focus Ring + Tick Marks -->
+    <com.example.camera.FocusRingView
+        android:id="@+id/focusRingView"
         android:layout_width="120dp"
         android:layout_height="120dp"
-        android:background="@drawable/bg_focus_ring"
-        android:visibility="invisible"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ✅ Nilai EV Display -->
+    <TextView
+        android:id="@+id/tvEVValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="4"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -153,7 +179,7 @@
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Zoom Bar + Tombol Sparkle -->
+        <!-- Zoom Bar + Tombol ✨ -->
         <LinearLayout
             android:id="@+id/zoomBar"
             android:layout_width="match_parent"
@@ -296,7 +322,7 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <!-- Panel Filter (muncul saat tombol ✨ diklik) -->
+        <!-- Panel Filter -->
         <HorizontalScrollView
             android:id="@+id/filterPanel"
             android:layout_width="match_parent"
@@ -325,7 +351,7 @@
             android:visibility="gone"
             android:paddingVertical="12dp" />
 
-        <!-- Baris Bawah: Galeri + Shutter + Switch -->
+        <!-- Baris Bawah -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/bottomRow"
             android:layout_width="match_parent"
