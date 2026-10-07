@@ -609,10 +609,20 @@ private fun populateFilterList() {
         container.addView(label)
 
         container.setOnClickListener {
-            currentPreset = preset
-            isPresetEnabled = (preset.id != "natural")
-            populateFilterList()
-            Toast.makeText(this, "Filter: ${preset.name}", Toast.LENGTH_SHORT).show()
+    currentPreset = preset
+    isPresetEnabled = (preset.id != "natural")
+    populateFilterList()
+
+    // ✅ Munculkan slider kalau bukan Natural
+    if (preset.id == "natural") {
+        seekFilterIntensity.visibility = View.GONE
+    } else {
+        seekFilterIntensity.visibility = View.VISIBLE
+        seekFilterIntensity.progress = 100
+        filterIntensity = 100
+    }
+
+    Toast.makeText(this, "Filter: ${preset.name}", Toast.LENGTH_SHORT).show()
 
             btnFilter.postDelayed({
                 isFilterPanelVisible = false
