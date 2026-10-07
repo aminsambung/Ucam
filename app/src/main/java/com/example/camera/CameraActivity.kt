@@ -344,6 +344,7 @@ class CameraActivity : AppCompatActivity() {
         tvRecDuration      = findViewById(R.id.tvRecDuration)
 
         filterPanel        = findViewById(R.id.filterPanel)
+        seekFilterIntensity = findViewById(R.id.seekFilterIntensity)
         filterList         = findViewById(R.id.filterList)
         tvFilterLabel      = findViewById(R.id.tvFilterLabel)
         bottomRow          = findViewById(R.id.bottomRow)
