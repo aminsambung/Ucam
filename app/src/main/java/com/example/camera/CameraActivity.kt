@@ -461,7 +461,15 @@ private fun setupListeners() {
         override fun onStartTrackingTouch(seekBar: SeekBar?) {}
         override fun onStopTrackingTouch(seekBar: SeekBar?) {}
     })
-
+    
+     // ✅ Filter intensity slider
+seekFilterIntensity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        filterIntensity = progress
+    }
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+})
     // ✅ Exposure Slider callback
     exposureSliderView.onExposureChanged = { ev ->
         updateEVDisplay(ev)
