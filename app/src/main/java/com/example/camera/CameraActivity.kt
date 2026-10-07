@@ -483,8 +483,19 @@ seekFilterIntensity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeL
 
     // ✅ Tap overlay — focus + exposure
     touchOverlay.setOnTouchListener { _, event ->
-        if (event.action == MotionEvent.ACTION_UP) {
-            val factory = viewFinder.meteringPointFactory
+    if (event.action == MotionEvent.ACTION_UP) {
+        // ✅ Kalau panel filter terbuka → tutup panel, TIDAK focus
+        if (isFilterPanelVisible) {
+            isFilterPanelVisible = false
+            zoomBar.visibility = View.VISIBLE
+            modeBarContainer.visibility = View.VISIBLE
+            bottomRow.visibility = View.VISIBLE
+            filterPanel.visibility = View.GONE
+            tvFilterLabel.visibility = View.GONE
+            return@setOnTouchListener true
+        }
+        
+        val factory = viewFinder.meteringPointFactory
             val point = factory.createPoint(event.x, event.y)
             val action = FocusMeteringAction.Builder(
                 point,
