@@ -1155,35 +1155,45 @@ private fun setSafeZoom(ratio: Float) {
 
     // ================== MINI-ISP (DIPERHALUS) ==================
     private fun applyMiniISP(src: Bitmap): Bitmap {
-        val wbMatrix = calculateWhiteBalanceMatrix(src)
-        val toneMatrix = ColorMatrix(floatArrayOf(
-            1.05f, 0f, 0f, 0f, 8f,
-            0f, 1.05f, 0f, 0f, 8f,
-            0f, 0f, 1.05f, 0f, 8f,
-            0f, 0f, 0f, 1f, 0f
-        ))
-        val satMatrix = ColorMatrix().apply { setSaturation(1.08f) }
-        val microContrast = ColorMatrix(floatArrayOf(
-            1.02f, 0f, 0f, 0f, 0f,
-            0f, 1.02f, 0f, 0f, 0f,
-            0f, 0f, 1.02f, 0f, 0f,
-            0f, 0f, 0f, 1f, 0f
-        ))
-        wbMatrix.postConcat(toneMatrix)
-        wbMatrix.postConcat(satMatrix)
-        wbMatrix.postConcat(microContrast)
+    // ✅ SKIP auto white balance (bikin gelap) — pakai tone + sat + shadow lift saja
+    val toneMatrix = ColorMatrix(floatArrayOf(
+        1.12f, 0f, 0f, 0f, 18f,    // ← Brightness dinaikkan
+        0f, 1.12f, 0f, 0f, 18f,
+        0f, 0f, 1.12f, 0f, 18f,
+        0f, 0f, 0f, 1f, 0f
+    ))
+    val satMatrix = ColorMatrix().apply { setSaturation(1.12f) }
+    val microContrast = ColorMatrix(floatArrayOf(
+        1.03f, 0f, 0f, 0f, 0f,
+        0f, 1.03f, 0f, 0f, 0f,
+        0f, 0f, 1.03f, 0f, 0f,
+        0f, 0f, 0f, 1f, 0f
+    ))
+    // ✅ Shadow lift — angkat area gelap
+    val shadowLift = ColorMatrix(floatArrayOf(
+        1f, 0f, 0f, 0f, 12f,
+        0f, 1f, 0f, 0f, 12f,
+        0f, 0f, 1f, 0f, 12f,
+        0f, 0f, 0f, 1f, 0f
+    ))
+    
+    val finalMatrix = ColorMatrix()
+    finalMatrix.postConcat(toneMatrix)
+    finalMatrix.postConcat(satMatrix)
+    finalMatrix.postConcat(microContrast)
+    finalMatrix.postConcat(shadowLift)
 
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        val paint = Paint().apply {
-            colorFilter = ColorMatrixColorFilter(wbMatrix)
-            isAntiAlias = true
-            isFilterBitmap = true
-            isDither = true
-        }
-        canvas.drawBitmap(src, 0f, 0f, paint)
-        return dest
+    val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(dest)
+    val paint = Paint().apply {
+        colorFilter = ColorMatrixColorFilter(finalMatrix)
+        isAntiAlias = true
+        isFilterBitmap = true
+        isDither = true
     }
+    canvas.drawBitmap(src, 0f, 0f, paint)
+    return dest
+}
 
     private fun calculateWhiteBalanceMatrix(src: Bitmap): ColorMatrix {
         var rSum = 0L; var gSum = 0L; var bSum = 0L; var count = 0
