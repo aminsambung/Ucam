@@ -179,7 +179,8 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var tvRecDuration: TextView
 
     // Filter panel
-    private lateinit var filterPanel: android.widget.HorizontalScrollView
+    private lateinit var filterPanel: android.widget.LinearLayout
+    private lateinit var seekFilterIntensity: SeekBar
     private lateinit var filterList: android.widget.LinearLayout
     private lateinit var tvFilterLabel: TextView
     private lateinit var bottomRow: androidx.constraintlayout.widget.ConstraintLayout
