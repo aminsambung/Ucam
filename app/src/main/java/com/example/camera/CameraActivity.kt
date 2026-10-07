@@ -931,11 +931,18 @@ private fun setSafeZoom(ratio: Float) {
                 val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(
-                    this, selector, preview, imageCapture, videoCapture
-                )
-                setSafeZoom(zoomValues[zoomIndex])
-                applyFlashToCapture()
-                updatePreviewScaleType()
+    this, selector, preview, imageCapture, videoCapture
+)
+setSafeZoom(zoomValues[zoomIndex])
+applyFlashToCapture()
+updatePreviewScaleType()
+
+// ✅ Set exposure +1 EV biar preview lebih terang
+try {
+    camera?.cameraControl?.setExposureCompensationIndex(10)  // +1.0 EV
+} catch (e: Exception) {
+    Log.e(TAG, "Exposure error: ${e.message}")
+}
             } catch (e: Exception) {
                 Log.e(TAG, "Camera bind FAILED", e)
             }
