@@ -69,7 +69,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ✅ Exposure Slider — visibility INVISIBLE -->
     <com.example.camera.ExposureSliderView
         android:id="@+id/exposureSliderView"
         android:layout_width="200dp"
@@ -78,7 +77,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ✅ Focus Ring — visibility INVISIBLE -->
     <com.example.camera.FocusRingView
         android:id="@+id/focusRingView"
         android:layout_width="120dp"
@@ -87,7 +85,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ✅ EV Value — visibility INVISIBLE -->
     <TextView
         android:id="@+id/tvEVValue"
         android:layout_width="wrap_content"
@@ -179,7 +176,6 @@
         android:paddingBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- ✅ INDIKATOR REC -->
         <LinearLayout
             android:id="@+id/recIndicator"
             android:layout_width="wrap_content"
@@ -351,21 +347,43 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <HorizontalScrollView
+        <!-- ✅ FILTER PANEL (vertical + slider + scroll) -->
+        <LinearLayout
             android:id="@+id/filterPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
+            android:orientation="vertical"
             android:visibility="gone"
             android:paddingVertical="8dp">
 
-            <LinearLayout
-                android:id="@+id/filterList"
-                android:layout_width="wrap_content"
+            <!-- Slider intensitas filter -->
+            <SeekBar
+                android:id="@+id/seekFilterIntensity"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="16dp" />
-        </HorizontalScrollView>
+                android:layout_marginHorizontal="32dp"
+                android:layout_marginBottom="8dp"
+                android:max="200"
+                android:progress="100"
+                android:progressTint="#FFC107"
+                android:thumbTint="#FFC107"
+                android:progressBackgroundTint="#66FFFFFF"
+                android:visibility="gone" />
+
+            <!-- Thumbnail filter -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/filterList"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp" />
+            </HorizontalScrollView>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvFilterLabel"
@@ -453,7 +471,6 @@
                 android:progress="70"
                 android:progressTint="#FFC107"
                 android:thumbTint="#FFC107" />
-
         </LinearLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
