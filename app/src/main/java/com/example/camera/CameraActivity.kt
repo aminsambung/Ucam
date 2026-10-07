@@ -187,6 +187,7 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var zoomBar: android.widget.LinearLayout
     private lateinit var modeBarContainer: android.widget.HorizontalScrollView
     private var isFilterPanelVisible = false
+    private var filterIntensity = 100  // 0-200
 
     // DSLR panel
     private lateinit var dslrPanel: android.widget.LinearLayout
