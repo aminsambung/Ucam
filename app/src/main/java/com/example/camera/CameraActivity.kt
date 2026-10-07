@@ -1287,11 +1287,14 @@ private fun setSafeZoom(ratio: Float) {
 
     // ================== APPLY PRESET ==================
     private fun applyPreset(src: Bitmap, preset: CameraPreset): Bitmap {
-        val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(dest)
-        val paint = Paint()
+    val dest = Bitmap.createBitmap(src.width, src.height, src.config ?: Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(dest)
+    val paint = Paint()
 
-        val c = preset.contrast
+    // ✅ Hitung alpha dari intensitas (0-200% → 0.0-2.0)
+    val alpha = filterIntensity / 100f
+
+    val c = preset.contrast
         val b = preset.brightness
         val t = (-0.5f * c + 0.5f) * 255f + b
         val matrix = ColorMatrix(floatArrayOf(
