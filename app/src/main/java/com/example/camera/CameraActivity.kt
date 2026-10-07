@@ -938,7 +938,11 @@ updatePreviewScaleType()
 
 // ✅ Set exposure +1 EV biar preview lebih terang
 try {
-    camera?.cameraControl?.setExposureCompensationIndex(10)  // +1.0 EV
+    // ✅ Set ke 80% dari max EV (biar terang maksimal)
+    val maxEv = camera?.cameraInfo?.exposureState?.exposureCompensationRange?.upper ?: 10
+    val targetEv = (maxEv * 0.8f).toInt()
+    camera?.cameraControl?.setExposureCompensationIndex(targetEv)
+    Log.d(TAG, "Exposure set to: $targetEv (max=$maxEv)")
 } catch (e: Exception) {
     Log.e(TAG, "Exposure error: ${e.message}")
 }
