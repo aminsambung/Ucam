@@ -504,10 +504,9 @@ seekFilterIntensity.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeL
             camera?.cameraControl?.startFocusAndMetering(action)
                 ?.addListener({ Log.d(TAG, "Focus & metering selesai") }, ContextCompat.getMainExecutor(this))
 
-            exposureSliderView.currentEV = 0f
-            try { camera?.cameraControl?.setExposureCompensationIndex(0) } catch (_: Exception) {}
-
-            showFocusRing(event.x, event.y)
+            // ✅ JANGAN reset exposure — biar tetap terang
+            // Hapus 2 baris reset exposure
+             showFocusRing(event.x, event.y)
 
             if (isFocusPeakingOn) {
                 focusPeakingRing.translationX = event.x - focusPeakingRing.width / 2f
