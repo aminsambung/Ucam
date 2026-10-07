@@ -1335,17 +1335,32 @@ private fun setSafeZoom(ratio: Float) {
                 0f, 0f, 0f, 1f, 0f
             )))
         }
-        paint.colorFilter = ColorMatrixColorFilter(matrix)
-        paint.isAntiAlias = true
-        paint.isFilterBitmap = true
-        canvas.drawBitmap(src, 0f, 0f, paint)
-
-        if (preset.id == "sketch") {
-            return applyPencilSketch(dest)
+            // ✅ Blend matrix sesuai intensitas
+    if (alpha != 1f) {
+        val identity = ColorMatrix()
+        val m1 = FloatArray(20)
+        val m2 = FloatArray(20)
+        identity.getArray()?.let { System.arraycopy(it, 0, m1, 0, 20) }
+        matrix.getArray()?.let { System.arraycopy(it, 0, m2, 0, 20) }
+        for (i in 0 until 20) {
+            m1[i] = m1[i] * (1f - alpha) + m2[i] * alpha
         }
-
-        return dest
+        val blended = ColorMatrix()
+        blended.set(m1)
+        paint.colorFilter = ColorMatrixColorFilter(blended)
+    } else {
+        paint.colorFilter = ColorMatrixColorFilter(matrix)
     }
+    paint.isAntiAlias = true
+    paint.isFilterBitmap = true
+    canvas.drawBitmap(src, 0f, 0f, paint)
+
+    if (preset.id == "sketch") {
+        return applyPencilSketch(dest)
+    }
+
+    return dest
+}
 
     // ================== PENCIL SKETCH ==================
     private fun applyPencilSketch(src: Bitmap): Bitmap {
