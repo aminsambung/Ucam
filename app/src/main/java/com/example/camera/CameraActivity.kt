@@ -616,7 +616,7 @@ private fun getColorForPreset(preset: CameraPreset): Int {
         "fuji"         -> Color.parseColor("#8BAA7A")
         "samsung"      -> Color.parseColor("#1428A0")
         "vintage"      -> Color.parseColor("#B8885A")
-        "sunset_glow"  -> Color.parseColor("#FF8C42")
+        "gcam"  -> Color.parseColor("#FF8C42")
         "cool_ocean"   -> Color.parseColor("#4A90C2")
         "pink_dream"   -> Color.parseColor("#FFB6D9")
         "sepia_gold"   -> Color.parseColor("#C2A56B")
